@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "title": {"en": "Acme Orders Tour", "fr": "Visite d'Acme Orders"},
+    "crumb": {"en": "Acme Orders (made-up example) · built with the system-tour skill", "fr": "Acme Orders (exemple fictif) · fait avec le skill system-tour"},
+    "heading": {"en": "How Acme Orders behaves", "fr": "Comment Acme Orders fonctionne"},
+    "lang": "en",
+    "langs": ["en", "fr"],
+    "mapLabel": {"en": "Animated isometric map of Acme Orders, a made-up shop", "fr": "Carte isométrique animée d'Acme Orders, une boutique fictive"}
+  },
+  "zone": {"from": [0.3, -6.5], "to": [18.4, 9.5], "label": {"en": "Acme · private cloud", "fr": "Acme · cloud privé"}},
+  "routes": {"gateway|web": "uv", "gateway|orders": "vu", "bus|orders": "vu", "bus|notify": "vu", "bus|inventory": "vu"},
+  "home": {
+    "title": {"en": "The system at work", "fr": "Le système en action"},
+    "intro": [
+      {"en": "This is a made-up online shop, drawn by the <b>system-tour</b> skill from a single JSON file. Several areas run at once below: people signing in, orders being paid, events fanning out, stock being checked.",
+       "fr": "Voici une boutique en ligne fictive, dessinée par le skill <b>system-tour</b> à partir d'un seul fichier JSON. Plusieurs domaines tournent en même temps : des connexions, des commandes payées, des événements diffusés, du stock vérifié."}
+    ],
+    "play": ["use/order", "use/track", "use/stock"]
+  },
+  "nodes": [
+    {"id": "shopper",  "kind": "people",   "u": -1, "v": 9,   "label": {"en": "Shoppers", "fr": "Clients"}, "sub": "web"},
+    {"id": "web",      "kind": "entry",    "u": 2,  "v": 6,   "label": "Web", "sub": "SPA · CDN", "icon": "globe"},
+    {"id": "gateway",  "kind": "entry",    "u": 5,  "v": 3,   "label": {"en": "Gateway", "fr": "Passerelle"}, "sub": {"en": "single entry", "fr": "entrée unique"}, "icon": "door"},
+    {"id": "idp",      "kind": "identity", "u": 2,  "v": 0.5, "label": {"en": "Identity", "fr": "Identité"}, "sub": "OIDC", "icon": "key"},
+    {"id": "orders",   "kind": "service",  "u": 9,  "v": 0,   "label": {"en": "orders", "fr": "commandes"}, "icon": "cart"},
+    {"id": "payments", "kind": "service",  "u": 9,  "v": -3,  "label": {"en": "payments", "fr": "paiements"}, "icon": "card"},
+    {"id": "inventory","kind": "service",  "u": 12, "v": 0,   "label": {"en": "inventory", "fr": "stock"}, "icon": "box"},
+    {"id": "notify",   "kind": "service",  "u": 12, "v": -3,  "label": "notifications", "icon": "bell"},
+    {"id": "assist",   "kind": "ai",       "u": 9,  "v": 3,   "label": {"en": "assistant", "fr": "assistant"}, "sub": {"en": "proposes only", "fr": "propose seulement"}, "icon": "spark"},
+    {"id": "db",       "kind": "store",    "u": 16, "v": -1,  "label": "PostgreSQL", "sub": {"en": "schema per service", "fr": "un schéma par service"}},
+    {"id": "bus",      "kind": "store",    "u": 16, "v": 2.5, "label": {"en": "Message bus", "fr": "Bus de messages"}, "sub": {"en": "durable queues", "fr": "files durables"}},
+    {"id": "cache",    "kind": "store",    "u": 16, "v": 6,   "label": "Redis", "sub": {"en": "shared state", "fr": "état partagé"}},
+    {"id": "psp",      "kind": "ext",      "u": 8,  "v": -9,  "label": {"en": "Payment provider", "fr": "Prestataire de paiement"}},
+    {"id": "email",    "kind": "ext",      "u": 13, "v": -9,  "label": {"en": "Email service", "fr": "Service d'e-mail"}, "tc": true},
+    {"id": "llm",      "kind": "ext",      "u": 20, "v": 7,   "label": {"en": "Hosted model", "fr": "Modèle hébergé"}}
+  ],
+  "categories": [
+    {"id": "use", "name": {"en": "Using the app", "fr": "Utiliser l'appli"}, "scen": [
+      {"id": "order", "name": {"en": "Place an order", "fr": "Passer une commande"}, "summary": {"en": "From the basket to a paid order and a confirmation email.", "fr": "Du panier à une commande payée et un e-mail de confirmation."}, "steps": [
+        {"nav": {"en": "Sign in", "fr": "Connexion"}, "title": {"en": "The gateway holds the session, not the browser", "fr": "La passerelle garde la session, pas le navigateur"},
+         "body": [{"en": "The shopper signs in on the identity provider. The <code>gateway</code> swaps the one-time code for tokens and keeps them; the browser only gets an HttpOnly cookie.", "fr": "Le client se connecte auprès du fournisseur d'identité. La <code>passerelle</code> échange le code à usage unique contre des jetons et les garde ; le navigateur ne reçoit qu'un cookie HttpOnly."}],
+         "flows": [["shopper","web","req",{"en":"sign in","fr":"connexion"}],["web","gateway","req","/auth/login"],["gateway","idp","req","code + PKCE"],["idp","gateway","res",{"en":"tokens stay here","fr":"les jetons restent ici"}],["gateway","cache","req","session"],["gateway","web","res",{"en":"HttpOnly cookie","fr":"cookie HttpOnly"}]]},
+        {"nav": {"en": "Order", "fr": "Commande"}, "title": {"en": "Save the order and its event together", "fr": "Enregistrer la commande et son événement ensemble"},
+         "body": [{"en": "<code>orders</code> saves the order <b>and</b> its <code>OrderPlaced</code> event in one transaction (outbox), then asks <code>payments</code> to charge.", "fr": "<code>commandes</code> enregistre la commande <b>et</b> son événement <code>OrderPlaced</code> dans une seule transaction (outbox), puis demande à <code>paiements</code> de débiter."}],
+         "flows": [["shopper","web","req",{"en":"pay","fr":"payer"}],["web","gateway","req","POST /orders"],["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","db","req",{"en":"order + outbox row","fr":"commande + ligne outbox"}],["orders","payments","req",{"en":"charge","fr":"débiter"}],["payments","psp","req",{"en":"payment intent","fr":"intention de paiement"}],["psp","payments","res",{"en":"authorised","fr":"autorisé"}],["payments","orders","res",{"en":"paid ✓","fr":"payé ✓"}],["orders","bus","evt","OrderPlaced"]]},
+        {"nav": {"en": "Confirm", "fr": "Confirmation"}, "title": {"en": "Everyone else learns from the event", "fr": "Les autres l'apprennent par l'événement"},
+         "body": [{"en": "<code>inventory</code> reserves the items and <code>notifications</code> sends the confirmation. Neither is called by <code>orders</code>; both read the same event.", "fr": "<code>stock</code> réserve les articles et <code>notifications</code> envoie la confirmation. <code>commandes</code> n'appelle ni l'un ni l'autre ; les deux lisent le même événement."}],
+         "callout": ["tc", {"en": "To confirm", "fr": "À confirmer"}, {"en": "The email service is not chosen yet, so it is drawn dashed.", "fr": "Le service d'e-mail n'est pas encore choisi : il est dessiné en pointillés."}],
+         "flows": [["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}],["inventory","db","req",{"en":"reserve items","fr":"réserver les articles"}],["notify","email","req",{"en":"confirmation email","fr":"e-mail de confirmation"}]]}
+      ]},
+      {"id": "track", "name": {"en": "Track an order", "fr": "Suivre une commande"}, "summary": {"en": "A read goes straight to the owner of the data.", "fr": "Une lecture va directement au propriétaire de la donnée."}, "steps": [
+        {"nav": {"en": "Status", "fr": "Statut"}, "title": {"en": "Only orders answers questions about orders", "fr": "Seul commandes répond sur les commandes"},
+         "body": [{"en": "The status page asks the <code>gateway</code>, which checks the session in Redis and asks <code>orders</code>. No other service reads the orders tables.", "fr": "La page de statut interroge la <code>passerelle</code>, qui vérifie la session dans Redis et interroge <code>commandes</code>. Aucun autre service ne lit les tables des commandes."}],
+         "flows": [["shopper","web","req",{"en":"where is my order?","fr":"où est ma commande ?"}],["web","gateway","req","GET /orders/42"],["gateway","cache","req",{"en":"check session","fr":"vérifier la session"}],["gateway","orders","req",{"en":"status of #42","fr":"statut de la n°42"}],["orders","db","req",{"en":"read order","fr":"lire la commande"}],["orders","gateway","res",{"en":"shipped","fr":"expédiée"}],["gateway","web","res",{"en":"shipped · tomorrow","fr":"expédiée · demain"}]]}
+      ]},
+      {"id": "stock", "name": {"en": "Ask the assistant", "fr": "Demander à l'assistant"}, "summary": {"en": "The AI suggests; it never changes an order on its own.", "fr": "L'IA suggère ; elle ne modifie jamais une commande seule."}, "steps": [
+        {"nav": {"en": "Suggest", "fr": "Suggestion"}, "title": {"en": "The assistant reads the event and proposes a substitute", "fr": "L'assistant lit l'événement et propose un substitut"},
+         "body": [{"en": "When an item runs low, <code>assistant</code> asks the model for a close substitute and attaches it to the order as a proposal. The shopper accepts or ignores it.", "fr": "Quand un article manque, <code>assistant</code> demande au modèle un substitut proche et le joint à la commande comme proposition. Le client l'accepte ou l'ignore."}],
+         "flows": [["inventory","bus","evt",{"en":"StockLow","fr":"StockBas"}],["bus","assist","evt",{"en":"StockLow","fr":"StockBas"}],["assist","llm","ai",{"en":"find a substitute","fr":"trouver un substitut"}],["llm","assist","ai",{"en":"proposal + confidence","fr":"proposition + confiance"}],["assist","orders","res",{"en":"attach proposal","fr":"joindre la proposition"}]]}
+      ]}
+    ]},
+    {"id": "scale", "name": {"en": "Scaling", "fr": "Montée en charge"}, "scen": [
+      {"id": "instances", "name": {"en": "More shoppers, more instances", "fr": "Plus de clients, plus d'instances"}, "summary": {"en": "Any instance can serve any request.", "fr": "N'importe quelle instance sert n'importe quelle requête."}, "steps": [
+        {"nav": {"en": "Spread", "fr": "Répartition"}, "title": {"en": "No user state in memory", "fr": "Aucun état utilisateur en mémoire"},
+         "body": [{"en": "Sessions live in Redis and data in PostgreSQL, so the next request can land on any instance.", "fr": "Les sessions sont dans Redis et les données dans PostgreSQL : la requête suivante peut arriver sur n'importe quelle instance."}],
+         "scale": {"gateway": 2, "orders": 3},
+         "flows": [["web","gateway#0","req",{"en":"shopper A","fr":"client A"}],["gateway#0","orders#0","req",{"en":"order A","fr":"commande A"}],["web","gateway#1","req",{"en":"shopper B","fr":"client B"}],["gateway#1","orders#2","req",{"en":"order B","fr":"commande B"}],["gateway#1","cache","req",{"en":"session: shared","fr":"session : partagée"}]]},
+        {"nav": {"en": "One relay", "fr": "Un relais"}, "title": {"en": "Events leave once, in order", "fr": "Les événements partent une fois, dans l'ordre"},
+         "body": [{"en": "Three <code>orders</code> instances write outbox rows, but only the one holding the lock publishes them.", "fr": "Trois instances de <code>commandes</code> écrivent des lignes outbox, mais seule celle qui détient le verrou les publie."}],
+         "scale": {"orders": 3},
+         "flows": [["orders#0","db","req",{"en":"take relay lock ✓","fr":"prendre le verrou ✓"}],["orders#1","db","err",{"en":"lock taken","fr":"verrou déjà pris"},{"block":true}],["orders#0","bus","evt",{"en":"OrderPlaced · in order","fr":"OrderPlaced · dans l'ordre"}]]}
+      ]}
+    ]},
+    {"id": "fail", "name": {"en": "When something fails", "fr": "Quand une pièce tombe"}, "scen": [
+      {"id": "busdown", "name": {"en": "The bus is down", "fr": "Le bus est en panne"}, "summary": {"en": "Orders still save; events leave when the bus is back.", "fr": "Les commandes s'enregistrent ; les événements partent au retour du bus."}, "steps": [
+        {"nav": {"en": "Down", "fr": "Panne"}, "title": {"en": "Writes succeed; events wait in the outbox", "fr": "Les écritures passent ; les événements attendent dans l'outbox"},
+         "body": [{"en": "The order and its outbox row are saved. The relay cannot publish, so the event stays in the database.", "fr": "La commande et sa ligne outbox sont enregistrées. Le relais ne peut pas publier : l'événement reste dans la base."}],
+         "down": ["bus"],
+         "flows": [["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","db","req",{"en":"order + outbox row","fr":"commande + ligne outbox"}],["orders","gateway","res",{"en":"order saved ✓","fr":"commande enregistrée ✓"}],["orders","bus","err",{"en":"publish fails","fr":"publication échouée"},{"block":true}]]},
+        {"nav": {"en": "Back", "fr": "Retour"}, "title": {"en": "The bus returns and the backlog drains", "fr": "Le bus revient et le retard se résorbe"},
+         "body": [{"en": "The relay publishes what waited. Each consumer ignores a message it has already handled.", "fr": "Le relais publie ce qui attendait. Chaque consommateur ignore un message déjà traité."}],
+         "facts": [{"en": "No order is lost", "fr": "Aucune commande n'est perdue"}, {"en": "Emails arrive late, not twice", "fr": "Les e-mails arrivent en retard, pas en double"}],
+         "flows": [["orders","bus","evt",{"en":"backlog, in order","fr":"retard, dans l'ordre"}],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}]]}
+      ]},
+      {"id": "notifydown", "name": {"en": "Notifications are down", "fr": "Les notifications sont en panne"}, "summary": {"en": "Only emails wait.", "fr": "Seuls les e-mails attendent."}, "steps": [
+        {"nav": {"en": "Down", "fr": "Panne"}, "title": {"en": "Events wait in the notifications queue", "fr": "Les événements attendent dans la file des notifications"},
+         "body": [{"en": "<code>orders</code> and <code>inventory</code> keep working. The events for <code>notifications</code> wait in its durable queue.", "fr": "<code>commandes</code> et <code>stock</code> continuent. Les événements destinés à <code>notifications</code> attendent dans sa file durable."}],
+         "down": ["notify"],
+         "flows": [["orders","bus","evt","OrderPlaced"],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt",{"en":"waits in queue","fr":"attend dans la file"},{"park":true}]]}
+      ]},
+      {"id": "pspdown", "name": {"en": "The payment provider is down", "fr": "Le prestataire de paiement est en panne"}, "summary": {"en": "The shopper is told to retry; nothing is charged twice.", "fr": "Le client est invité à réessayer ; rien n'est débité deux fois."}, "steps": [
+        {"nav": {"en": "Refused", "fr": "Refus"}, "title": {"en": "No payment, no order event", "fr": "Pas de paiement, pas d'événement de commande"},
+         "body": [{"en": "<code>payments</code> cannot reach the provider and says so. <code>orders</code> keeps the order as <b>pending</b> and publishes nothing, so no stock is reserved and no email goes out.", "fr": "<code>paiements</code> ne joint pas le prestataire et le signale. <code>commandes</code> garde la commande <b>en attente</b> et ne publie rien : aucun stock réservé, aucun e-mail envoyé."}],
+         "down": ["psp"],
+         "flows": [["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","payments","req",{"en":"charge","fr":"débiter"}],["payments","psp","req",{"en":"payment intent","fr":"intention de paiement"},{"block":true}],["payments","orders","err",{"en":"provider unreachable","fr":"prestataire injoignable"}],["orders","gateway","res",{"en":"pending · retry","fr":"en attente · réessayer"}]]}
+      ]}
+    ]},
+    {"id": "why", "name": {"en": "Why a service", "fr": "Pourquoi un service"}, "scen": [
+      {"id": "whyassist", "name": {"en": "assistant", "fr": "assistant"}, "summary": {"en": "Why the AI is its own service and only proposes.", "fr": "Pourquoi l'IA est un service à part qui ne fait que proposer."}, "steps": [
+        {"nav": {"en": "Without", "fr": "Sans"}, "hypo": true, "title": {"en": "Not chosen: orders calls the model and waits", "fr": "Non retenu : commandes appelle le modèle et attend"},
+         "body": [{"en": "Every order would wait for the model. A slow or failing model would block checkout.", "fr": "Chaque commande attendrait le modèle. Un modèle lent ou en panne bloquerait le paiement."}],
+         "flows": [["orders","llm","ai",{"en":"classify order","fr":"classer la commande"}],["llm","orders","err",{"en":"timeout","fr":"délai dépassé"},{"block":true}]]},
+        {"nav": {"en": "With", "fr": "Avec"}, "title": {"en": "The assistant proposes; a person decides", "fr": "L'assistant propose ; une personne décide"},
+         "body": [{"en": "<code>assistant</code> reads the event, calls the model and attaches a proposal next to the order. Nothing waits for it.", "fr": "<code>assistant</code> lit l'événement, appelle le modèle et joint une proposition à la commande. Rien ne l'attend."}],
+         "facts": [{"en": "Checkout never waits for AI", "fr": "Le paiement n'attend jamais l'IA"}, {"en": "Changing the model is configuration", "fr": "Changer de modèle est une affaire de configuration"}, {"en": "The AI scales and fails on its own", "fr": "L'IA monte en charge et tombe seule"}],
+         "flows": [["bus","assist","evt","OrderPlaced"],["assist","llm","ai",{"en":"classify","fr":"classer"}],["llm","assist","ai",{"en":"proposal + confidence","fr":"proposition + confiance"}],["assist","orders","res",{"en":"attach proposal","fr":"joindre la proposition"}]]}
+      ]},
+      {"id": "whygateway", "name": {"en": "gateway", "fr": "passerelle"}, "summary": {"en": "Why tokens never reach the browser.", "fr": "Pourquoi les jetons n'arrivent jamais au navigateur."}, "steps": [
+        {"nav": {"en": "Without", "fr": "Sans"}, "hypo": true, "title": {"en": "Not chosen: the browser keeps the tokens", "fr": "Non retenu : le navigateur garde les jetons"},
+         "body": [{"en": "A token in the browser can be read by any script on the page. One injected script would be enough to call the services as the shopper.", "fr": "Un jeton dans le navigateur peut être lu par n'importe quel script de la page. Un seul script injecté suffirait pour appeler les services au nom du client."}],
+         "flows": [["idp","web","res",{"en":"tokens in the browser","fr":"jetons dans le navigateur"}],["web","gateway","req",{"en":"Bearer token from the page","fr":"jeton Bearer de la page"}],["gateway","orders","req",{"en":"passed through as-is","fr":"transmis tel quel"}]]},
+        {"nav": {"en": "With", "fr": "Avec"}, "title": {"en": "One door, and the keys stay behind it", "fr": "Une seule porte, et les clés restent derrière"},
+         "body": [{"en": "The <code>gateway</code> is the only way in. It holds the tokens, checks the session on every call and adds identity before forwarding.", "fr": "La <code>passerelle</code> est la seule entrée. Elle garde les jetons, vérifie la session à chaque appel et ajoute l'identité avant de transmettre."}],
+         "facts": [{"en": "The browser only holds a cookie scripts cannot read", "fr": "Le navigateur ne garde qu'un cookie illisible par les scripts"}, {"en": "Services trust one caller", "fr": "Les services ne font confiance qu'à un appelant"}],
+         "flows": [["web","gateway","req",{"en":"cookie","fr":"cookie"}],["gateway","cache","req","session"],["gateway","orders","req",{"en":"call + identity","fr":"appel + identité"}],["orders","gateway","res",{"en":"answer","fr":"réponse"}]]}
+      ]}
+    ]}
+  ]
+}

@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Tour</title>
+<style>
+:root{
+  --bg:#141210; --panel:#1b1916; --panel-2:#221f1b; --line:#2e2a25;
+  --text:#ece6dc; --muted:#a39b8f; --faint:#6d665c;
+  --accent:#c9d98f; --req:#e2a85c; --res:#8fc78a; --evt:#b392e6; --ai:#e6d16a; --err:#ef6a55;
+  --tc:#e58a6f;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5}
+button{font:inherit}
+.app{display:grid;grid-template-columns:1fr 370px;grid-template-rows:auto 1fr auto;height:100vh;min-height:640px}
+header{grid-column:1/3;display:flex;align-items:center;gap:20px;padding:10px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .crumb{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+header h1{margin:0;font-family:var(--mono);font-size:19px;font-weight:600}
+.cats{margin-left:auto;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.cat{background:none;border:0;color:var(--muted);font-family:var(--mono);font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer}
+.cat.home{color:var(--accent)}
+.langs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.langs:empty{display:none}
+.langs button{background:none;border:0;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.06em;padding:6px 10px;border-radius:7px;cursor:pointer;text-transform:uppercase}
+.langs button:hover{color:var(--text)}
+.langs button.on{background:var(--panel-2);color:var(--accent);box-shadow:inset 0 0 0 1px #4a443c}
+.cat:hover{color:var(--text)}
+.cat.on{background:var(--panel-2);color:var(--text);box-shadow:inset 0 0 0 1px #4a443c}
+.cat .n{color:var(--faint);margin-left:4px}
+
+.stage{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%, #1d1a16 0%, var(--bg) 70%)}
+.stage svg{width:100%;height:100%;display:block}
+.scen{position:absolute;top:10px;left:12px;right:330px;display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12.5px;background:#1b1916e6;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.chip:hover{color:var(--text);border-color:#4a443c}
+.chip.on{color:#1a1a12;background:var(--accent);border-color:var(--accent)}
+.ctrl{position:absolute;top:10px;right:12px;display:flex;gap:6px;align-items:center}
+.btn{font-family:var(--mono);font-size:12px;background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer}
+.btn:hover{border-color:#4a443c}
+.btn.primary{background:#2c3320;border-color:#4d5a33;color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:default}
+.speed{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.speed button{background:var(--panel-2);border:0;color:var(--muted);font-family:var(--mono);font-size:11.5px;padding:6px 9px;cursor:pointer}
+.speed button.on{background:#3a3a2a;color:var(--accent)}
+.stamp{position:absolute;top:52px;left:12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#ffd3c6;background:#4a2219;border:1px dashed var(--tc);padding:4px 10px;border-radius:6px;display:none}
+.stamp.on{display:block}
+.caption{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);max-width:min(760px,92%);background:#141210ee;border:1px solid #3a352e;border-radius:12px;padding:9px 16px;font-size:15px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 30px #0008}
+.caption .k{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.caption .route{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.caption .what{color:var(--text)}
+.caption:empty{display:none}
+.legend{position:absolute;left:16px;bottom:12px;display:flex;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.legend .dash{width:14px;height:0;border-radius:0;border-top:1.5px dashed var(--tc)}
+
+aside{grid-row:2/4;grid-column:2;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.guide{padding:18px 20px 12px;flex:1;overflow:auto}
+.kicker{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.scen-title{font-family:var(--mono);font-size:13px;color:var(--accent);margin:4px 0 2px}
+.guide h2{font-family:var(--mono);font-size:18px;margin:4px 0 10px;line-height:1.25}
+.guide p{margin:0 0 9px;color:#d6cfc4}
+.guide code{font-family:var(--mono);font-size:12px;background:#2a2621;padding:1px 5px;border-radius:4px;color:var(--text)}
+.callout{margin-top:12px;border-radius:10px;padding:9px 12px;font-size:13px;border:1px solid}
+.callout b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.callout.tip{background:#262b1d;border-color:#3e4a2b;color:#d3dcb7}
+.callout.tc{background:#2c1f1a;border-color:#5d3a2f;color:#efc3b4}
+.callout.bad{background:#2e1b18;border-color:#6a3127;color:#f2bdb2}
+.facts{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:5px}
+.facts li{font-size:13px;color:#cfc7bb;padding-left:16px;position:relative}
+.facts li::before{content:"";position:absolute;left:2px;top:8px;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.moves{margin:14px 0 0;counter-reset:m;border-top:1px solid var(--line);padding-top:10px}
+.moves h3{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);margin:0 0 6px;font-weight:500}
+.moves li{counter-increment:m;display:grid;grid-template-columns:22px 1fr;gap:6px;font-size:12.5px;color:#9c9488;padding:4px 6px;border-radius:6px;transition:background .25s,color .25s;cursor:pointer}
+.moves li:hover{background:#24211c}
+.moves li::before{content:counter(m);font-family:var(--mono);font-size:11px;color:var(--faint);text-align:right}
+.moves li .r{font-family:var(--mono);font-size:11.5px}
+.moves li.now{background:#2a2720;color:var(--text)}
+.moves li.now::before{color:var(--accent)}
+.moves li.past{color:#bdb5a9}
+.sw{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.slide-in{animation:slide .36s cubic-bezier(.2,.7,.2,1) both}
+.slide-in.d1{animation-delay:.04s}.slide-in.d2{animation-delay:.08s}.slide-in.d3{animation-delay:.12s}
+@keyframes slide{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.now{margin:12px 0 4px;border:1px solid #3e4a2b;background:#20251a;border-radius:10px;padding:9px 12px;min-height:56px}
+.now b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+.now .t{font-size:13px;color:#d6cfc4;display:grid;gap:3px}
+.now .t .s{font-family:var(--mono);font-size:12.5px;color:var(--text)}
+.areas{margin-top:14px;display:grid;gap:14px}
+.areas h3{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);margin:0 0 6px;font-weight:500;text-transform:uppercase}
+.area{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:6px 9px;color:#cfc7bb;cursor:pointer;transition:background .3s,border-color .3s}
+.area:hover{background:#24211c}
+.area .nm{font-family:var(--mono);font-size:12.5px;color:var(--text)}
+.area .nm::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#4a443c;margin-right:8px;vertical-align:2px;transition:background .3s,box-shadow .3s}
+.area .sm{display:block;font-size:12px;color:#9c9488;margin:2px 0 0 14px}
+.area.live{background:#2a2720;border-color:#3a352e}
+.area.live .nm::before{background:var(--accent);box-shadow:0 0 0 3px #c9d98f33}
+.nav{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line)}
+.nav .btn.primary{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.keys{padding:0 20px 12px;font-family:var(--mono);font-size:11px;color:var(--faint)}
+
+.strip{grid-column:1;border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--panel)}
+.strip .head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:8px}
+.steps{display:grid;position:relative}
+.steps .track{position:absolute;top:11px;height:1px;background:var(--line)}
+.steps .bar{position:absolute;top:11px;height:2px;background:var(--accent);transition:width .4s ease}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--muted);cursor:pointer;font-family:var(--mono);font-size:11px;padding:0;text-align:center}
+.step .dot{width:22px;height:22px;border-radius:50%;border:1px solid #4a443c;background:var(--bg);display:grid;place-items:center;font-size:10px;color:var(--muted);transition:all .2s}
+.step.done .dot{background:#2c3320;border-color:#4d5a33;color:var(--accent)}
+.step.on .dot{background:var(--accent);border-color:var(--accent);color:#1a1a12;box-shadow:0 0 0 4px #c9d98f22}
+.step.on{color:var(--text)}
+
+/* SVG */
+.node{transition:opacity .45s ease, filter .45s ease}
+.node.dim{opacity:.16;filter:saturate(.3)}
+.node.soft{opacity:.42;filter:saturate(.55)}
+.node-lbl.soft{opacity:.42}
+.node.down{filter:grayscale(.9) brightness(.7)}
+.node-lbl{transition:opacity .45s ease}
+.node-lbl text{paint-order:stroke;stroke:#141210;stroke-width:3px;stroke-linejoin:round}
+.node-lbl.dim{opacity:.16}
+.node-lbl.down{opacity:.6}
+.wire{fill:none;stroke:#3a352e;stroke-width:1.4;transition:opacity .4s, stroke .4s}
+.wire.on{stroke:#cfc4b1;stroke-width:1.8;stroke-dasharray:5 6;animation:march 1.6s linear infinite}
+.wire.dim{opacity:.18}
+.wire.tc.on{stroke:var(--tc)}
+@keyframes march{to{stroke-dashoffset:-22}}
+.lbl{font-family:var(--mono);font-size:12px;font-weight:600;fill:#f3eee6;text-anchor:middle;pointer-events:none}
+.sub{font-family:var(--mono);font-size:9.5px;fill:#b9b0a3;text-anchor:middle}
+.pill{transition:opacity .45s}
+.pill rect{fill:#1b1916;stroke:#4a443c}
+.pill text{font-family:var(--mono);font-size:10.5px;fill:#e8e1d6}
+.pill.tc rect{stroke:var(--tc);stroke-dasharray:3 2}
+.pill.tc .badge{fill:var(--tc);font-size:8.5px}
+.zone{fill:none;stroke:#5a5348;stroke-width:1.2;stroke-dasharray:6 6;transition:opacity .5s}
+.zone-txt{font-family:var(--mono);font-size:11px;letter-spacing:.18em;fill:#7a7266;text-transform:uppercase}
+.pkt-tag rect{fill:#141210;stroke-width:1.2}
+.pkt-tag text{font-family:var(--mono);font-size:12px;font-weight:600}
+.badge-down text{font-family:var(--mono);font-size:10px;font-weight:700;fill:#fff;letter-spacing:.08em}
+.badge-x text{font-family:var(--mono);font-size:10px;font-weight:700;fill:#1a1a12}
+@media (max-width: 980px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 460px auto auto;height:auto}
+  header{grid-column:1}
+  .cats{margin-left:0;flex-wrap:wrap}
+  aside{grid-row:4;grid-column:1;border-left:0;border-top:1px solid var(--line)}
+  .strip{grid-row:3}
+  .step span{display:none}
+  .legend,.caption .route{display:none}
+  .scen{right:12px;top:52px}
+  .ctrl{left:12px;right:auto}
+  .stamp{top:auto;bottom:60px;left:50%;transform:translateX(-50%);white-space:nowrap}
+  .caption{bottom:10px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="crumb" id="crumb"></div>
+      <h1 id="heading"></h1>
+    </div>
+    <nav class="cats" id="cats" aria-label="Scenario groups"></nav>
+    <div class="langs" id="langs" role="group" aria-label="Language"></div>
+  </header>
+
+  <section class="stage" id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Animated isometric map of the system"></svg>
+    <div class="scen" id="scen"></div>
+    <div class="ctrl">
+      <div class="speed" id="speed" aria-label="Speed"></div>
+      <button class="btn" id="replay" title="Replay (r)">↺</button>
+      <button class="btn" id="mprev" title="Previous move ( , )">⏮</button>
+      <button class="btn" id="pause" title="Pause (space)">❚❚</button>
+      <button class="btn" id="mnext" title="Next move ( . )">⏭</button>
+    </div>
+    <div class="stamp" id="stamp" data-ui="hypo"></div>
+    <div class="caption" id="caption"></div>
+    <div class="legend">
+      <span><i style="background:var(--req)"></i><span data-ui="req"></span></span>
+      <span><i style="background:var(--res)"></i><span data-ui="res"></span></span>
+      <span><i style="background:var(--evt)"></i><span data-ui="evt"></span></span>
+      <span><i style="background:var(--ai)"></i><span data-ui="ai"></span></span>
+      <span><i style="background:var(--err)"></i><span data-ui="err"></span></span>
+      <span><i class="dash"></i><span data-ui="tc"></span></span>
+    </div>
+  </section>
+
+  <aside>
+    <div class="guide" id="guide"></div>
+    <div class="nav">
+      <button class="btn" id="back">←</button>
+      <button class="btn primary" id="next">Next →</button>
+    </div>
+    <div class="keys" data-ui="keys"></div>
+  </aside>
+
+  <div class="strip">
+    <div class="head"><span id="strip-title">STEPS</span><span id="count"></span></div>
+    <div class="steps" id="steps"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const S = 30;
+const NS = 'http://www.w3.org/2000/svg';
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const PAL = {
+  entry:    ['#6a5236','#4f3d29','#3f3122','#a8875c'],
+  identity: ['#665a36','#4f452a','#403823','#a8975c'],
+  service:  ['#3a516b','#2d3f55','#243346','#6f8fb3'],
+  ai:       ['#476236','#374c2b','#2c3d22','#86a865'],
+  bpm:      ['#3f5f5a','#304a46','#273c39','#73a59c'],
+};
+const ICON = {
+  globe:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
+  door:'M6 3h12v18H6zM14 12h.01',
+  key:'M8 14a4 4 0 1 1 3.5-6l9 0v3h-2v2h-3v-2h-4A4 4 0 0 1 8 14z',
+  letter:'M3 6h18v12H3zM3 6l9 7 9-7',
+  flow:'M6 4v16M6 8h8a4 4 0 0 1 4 4v8M14 16l4 4 4-4',
+  file:'M6 3h8l4 4v14H6zM14 3v4h4',
+  bell:'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',
+  shield:'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',
+  spark:'M12 3v5M12 16v5M3 12h5M16 12h5M6 6l3 3M15 15l3 3M18 6l-3 3M9 15l-3 3',
+  search:'M10 4a6 6 0 1 0 0 12a6 6 0 1 0 0-12M15 15l6 6',
+  chat:'M4 5h16v11H9l-5 4z',
+  user:'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8M4 21c0-4 4-6 8-6s8 2 8 6',
+  cart:'M3 4h3l2 11h11l2-8H7M9 20h.01M18 20h.01',
+  card:'M3 6h18v12H3zM3 10h18M7 15h4',
+  box:'M12 3l8 4v10l-8 4-8-4V7zM4 7l8 4 8-4M12 11v10',
+  gear:'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2',
+  lock:'M6 11h12v10H6zM9 11V7a3 3 0 0 1 6 0v4',
+  cloud:'M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z',
+  queue:'M4 6h16M4 12h16M4 18h16M18 4l2 2-2 2',
+  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  clock:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 3',
+  phone:'M7 2h10v20H7zM11 18h2',
+  api:'M8 6l-5 6 5 6M16 6l5 6-5 6M14 4l-4 16',
+};
+
+// ---------------- data (inlined by build.py from the tour JSON)
+const TOUR = {"meta":{"title":{"en":"Acme Orders Tour","fr":"Visite d'Acme Orders"},"crumb":{"en":"Acme Orders (made-up example) · built with the system-tour skill","fr":"Acme Orders (exemple fictif) · fait avec le skill system-tour"},"heading":{"en":"How Acme Orders behaves","fr":"Comment Acme Orders fonctionne"},"lang":"en","langs":["en","fr"],"mapLabel":{"en":"Animated isometric map of Acme Orders, a made-up shop","fr":"Carte isométrique animée d'Acme Orders, une boutique fictive"}},"zone":{"from":[0.3,-6.5],"to":[18.4,9.5],"label":{"en":"Acme · private cloud","fr":"Acme · cloud privé"}},"routes":{"gateway|web":"uv","gateway|orders":"vu","bus|orders":"vu","bus|notify":"vu","bus|inventory":"vu"},"home":{"title":{"en":"The system at work","fr":"Le système en action"},"intro":[{"en":"This is a made-up online shop, drawn by the <b>system-tour<\/b> skill from a single JSON file. Several areas run at once below: people signing in, orders being paid, events fanning out, stock being checked.","fr":"Voici une boutique en ligne fictive, dessinée par le skill <b>system-tour<\/b> à partir d'un seul fichier JSON. Plusieurs domaines tournent en même temps : des connexions, des commandes payées, des événements diffusés, du stock vérifié."}],"play":["use/order","use/track","use/stock"]},"nodes":[{"id":"shopper","kind":"people","u":-1,"v":9,"label":{"en":"Shoppers","fr":"Clients"},"sub":"web"},{"id":"web","kind":"entry","u":2,"v":6,"label":"Web","sub":"SPA · CDN","icon":"globe"},{"id":"gateway","kind":"entry","u":5,"v":3,"label":{"en":"Gateway","fr":"Passerelle"},"sub":{"en":"single entry","fr":"entrée unique"},"icon":"door"},{"id":"idp","kind":"identity","u":2,"v":0.5,"label":{"en":"Identity","fr":"Identité"},"sub":"OIDC","icon":"key"},{"id":"orders","kind":"service","u":9,"v":0,"label":{"en":"orders","fr":"commandes"},"icon":"cart"},{"id":"payments","kind":"service","u":9,"v":-3,"label":{"en":"payments","fr":"paiements"},"icon":"card"},{"id":"inventory","kind":"service","u":12,"v":0,"label":{"en":"inventory","fr":"stock"},"icon":"box"},{"id":"notify","kind":"service","u":12,"v":-3,"label":"notifications","icon":"bell"},{"id":"assist","kind":"ai","u":9,"v":3,"label":{"en":"assistant","fr":"assistant"},"sub":{"en":"proposes only","fr":"propose seulement"},"icon":"spark"},{"id":"db","kind":"store","u":16,"v":-1,"label":"PostgreSQL","sub":{"en":"schema per service","fr":"un schéma par service"}},{"id":"bus","kind":"store","u":16,"v":2.5,"label":{"en":"Message bus","fr":"Bus de messages"},"sub":{"en":"durable queues","fr":"files durables"}},{"id":"cache","kind":"store","u":16,"v":6,"label":"Redis","sub":{"en":"shared state","fr":"état partagé"}},{"id":"psp","kind":"ext","u":8,"v":-9,"label":{"en":"Payment provider","fr":"Prestataire de paiement"}},{"id":"email","kind":"ext","u":13,"v":-9,"label":{"en":"Email service","fr":"Service d'e-mail"},"tc":true},{"id":"llm","kind":"ext","u":20,"v":7,"label":{"en":"Hosted model","fr":"Modèle hébergé"}}],"categories":[{"id":"use","name":{"en":"Using the app","fr":"Utiliser l'appli"},"scen":[{"id":"order","name":{"en":"Place an order","fr":"Passer une commande"},"summary":{"en":"From the basket to a paid order and a confirmation email.","fr":"Du panier à une commande payée et un e-mail de confirmation."},"steps":[{"nav":{"en":"Sign in","fr":"Connexion"},"title":{"en":"The gateway holds the session, not the browser","fr":"La passerelle garde la session, pas le navigateur"},"body":[{"en":"The shopper signs in on the identity provider. The <code>gateway<\/code> swaps the one-time code for tokens and keeps them; the browser only gets an HttpOnly cookie.","fr":"Le client se connecte auprès du fournisseur d'identité. La <code>passerelle<\/code> échange le code à usage unique contre des jetons et les garde ; le navigateur ne reçoit qu'un cookie HttpOnly."}],"flows":[["shopper","web","req",{"en":"sign in","fr":"connexion"}],["web","gateway","req","/auth/login"],["gateway","idp","req","code + PKCE"],["idp","gateway","res",{"en":"tokens stay here","fr":"les jetons restent ici"}],["gateway","cache","req","session"],["gateway","web","res",{"en":"HttpOnly cookie","fr":"cookie HttpOnly"}]]},{"nav":{"en":"Order","fr":"Commande"},"title":{"en":"Save the order and its event together","fr":"Enregistrer la commande et son événement ensemble"},"body":[{"en":"<code>orders<\/code> saves the order <b>and<\/b> its <code>OrderPlaced<\/code> event in one transaction (outbox), then asks <code>payments<\/code> to charge.","fr":"<code>commandes<\/code> enregistre la commande <b>et<\/b> son événement <code>OrderPlaced<\/code> dans une seule transaction (outbox), puis demande à <code>paiements<\/code> de débiter."}],"flows":[["shopper","web","req",{"en":"pay","fr":"payer"}],["web","gateway","req","POST /orders"],["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","db","req",{"en":"order + outbox row","fr":"commande + ligne outbox"}],["orders","payments","req",{"en":"charge","fr":"débiter"}],["payments","psp","req",{"en":"payment intent","fr":"intention de paiement"}],["psp","payments","res",{"en":"authorised","fr":"autorisé"}],["payments","orders","res",{"en":"paid ✓","fr":"payé ✓"}],["orders","bus","evt","OrderPlaced"]]},{"nav":{"en":"Confirm","fr":"Confirmation"},"title":{"en":"Everyone else learns from the event","fr":"Les autres l'apprennent par l'événement"},"body":[{"en":"<code>inventory<\/code> reserves the items and <code>notifications<\/code> sends the confirmation. Neither is called by <code>orders<\/code>; both read the same event.","fr":"<code>stock<\/code> réserve les articles et <code>notifications<\/code> envoie la confirmation. <code>commandes<\/code> n'appelle ni l'un ni l'autre ; les deux lisent le même événement."}],"callout":["tc",{"en":"To confirm","fr":"À confirmer"},{"en":"The email service is not chosen yet, so it is drawn dashed.","fr":"Le service d'e-mail n'est pas encore choisi : il est dessiné en pointillés."}],"flows":[["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}],["inventory","db","req",{"en":"reserve items","fr":"réserver les articles"}],["notify","email","req",{"en":"confirmation email","fr":"e-mail de confirmation"}]]}]},{"id":"track","name":{"en":"Track an order","fr":"Suivre une commande"},"summary":{"en":"A read goes straight to the owner of the data.","fr":"Une lecture va directement au propriétaire de la donnée."},"steps":[{"nav":{"en":"Status","fr":"Statut"},"title":{"en":"Only orders answers questions about orders","fr":"Seul commandes répond sur les commandes"},"body":[{"en":"The status page asks the <code>gateway<\/code>, which checks the session in Redis and asks <code>orders<\/code>. No other service reads the orders tables.","fr":"La page de statut interroge la <code>passerelle<\/code>, qui vérifie la session dans Redis et interroge <code>commandes<\/code>. Aucun autre service ne lit les tables des commandes."}],"flows":[["shopper","web","req",{"en":"where is my order?","fr":"où est ma commande ?"}],["web","gateway","req","GET /orders/42"],["gateway","cache","req",{"en":"check session","fr":"vérifier la session"}],["gateway","orders","req",{"en":"status of #42","fr":"statut de la n°42"}],["orders","db","req",{"en":"read order","fr":"lire la commande"}],["orders","gateway","res",{"en":"shipped","fr":"expédiée"}],["gateway","web","res",{"en":"shipped · tomorrow","fr":"expédiée · demain"}]]}]},{"id":"stock","name":{"en":"Ask the assistant","fr":"Demander à l'assistant"},"summary":{"en":"The AI suggests; it never changes an order on its own.","fr":"L'IA suggère ; elle ne modifie jamais une commande seule."},"steps":[{"nav":{"en":"Suggest","fr":"Suggestion"},"title":{"en":"The assistant reads the event and proposes a substitute","fr":"L'assistant lit l'événement et propose un substitut"},"body":[{"en":"When an item runs low, <code>assistant<\/code> asks the model for a close substitute and attaches it to the order as a proposal. The shopper accepts or ignores it.","fr":"Quand un article manque, <code>assistant<\/code> demande au modèle un substitut proche et le joint à la commande comme proposition. Le client l'accepte ou l'ignore."}],"flows":[["inventory","bus","evt",{"en":"StockLow","fr":"StockBas"}],["bus","assist","evt",{"en":"StockLow","fr":"StockBas"}],["assist","llm","ai",{"en":"find a substitute","fr":"trouver un substitut"}],["llm","assist","ai",{"en":"proposal + confidence","fr":"proposition + confiance"}],["assist","orders","res",{"en":"attach proposal","fr":"joindre la proposition"}]]}]}]},{"id":"scale","name":{"en":"Scaling","fr":"Montée en charge"},"scen":[{"id":"instances","name":{"en":"More shoppers, more instances","fr":"Plus de clients, plus d'instances"},"summary":{"en":"Any instance can serve any request.","fr":"N'importe quelle instance sert n'importe quelle requête."},"steps":[{"nav":{"en":"Spread","fr":"Répartition"},"title":{"en":"No user state in memory","fr":"Aucun état utilisateur en mémoire"},"body":[{"en":"Sessions live in Redis and data in PostgreSQL, so the next request can land on any instance.","fr":"Les sessions sont dans Redis et les données dans PostgreSQL : la requête suivante peut arriver sur n'importe quelle instance."}],"scale":{"gateway":2,"orders":3},"flows":[["web","gateway#0","req",{"en":"shopper A","fr":"client A"}],["gateway#0","orders#0","req",{"en":"order A","fr":"commande A"}],["web","gateway#1","req",{"en":"shopper B","fr":"client B"}],["gateway#1","orders#2","req",{"en":"order B","fr":"commande B"}],["gateway#1","cache","req",{"en":"session: shared","fr":"session : partagée"}]]},{"nav":{"en":"One relay","fr":"Un relais"},"title":{"en":"Events leave once, in order","fr":"Les événements partent une fois, dans l'ordre"},"body":[{"en":"Three <code>orders<\/code> instances write outbox rows, but only the one holding the lock publishes them.","fr":"Trois instances de <code>commandes<\/code> écrivent des lignes outbox, mais seule celle qui détient le verrou les publie."}],"scale":{"orders":3},"flows":[["orders#0","db","req",{"en":"take relay lock ✓","fr":"prendre le verrou ✓"}],["orders#1","db","err",{"en":"lock taken","fr":"verrou déjà pris"},{"block":true}],["orders#0","bus","evt",{"en":"OrderPlaced · in order","fr":"OrderPlaced · dans l'ordre"}]]}]}]},{"id":"fail","name":{"en":"When something fails","fr":"Quand une pièce tombe"},"scen":[{"id":"busdown","name":{"en":"The bus is down","fr":"Le bus est en panne"},"summary":{"en":"Orders still save; events leave when the bus is back.","fr":"Les commandes s'enregistrent ; les événements partent au retour du bus."},"steps":[{"nav":{"en":"Down","fr":"Panne"},"title":{"en":"Writes succeed; events wait in the outbox","fr":"Les écritures passent ; les événements attendent dans l'outbox"},"body":[{"en":"The order and its outbox row are saved. The relay cannot publish, so the event stays in the database.","fr":"La commande et sa ligne outbox sont enregistrées. Le relais ne peut pas publier : l'événement reste dans la base."}],"down":["bus"],"flows":[["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","db","req",{"en":"order + outbox row","fr":"commande + ligne outbox"}],["orders","gateway","res",{"en":"order saved ✓","fr":"commande enregistrée ✓"}],["orders","bus","err",{"en":"publish fails","fr":"publication échouée"},{"block":true}]]},{"nav":{"en":"Back","fr":"Retour"},"title":{"en":"The bus returns and the backlog drains","fr":"Le bus revient et le retard se résorbe"},"body":[{"en":"The relay publishes what waited. Each consumer ignores a message it has already handled.","fr":"Le relais publie ce qui attendait. Chaque consommateur ignore un message déjà traité."}],"facts":[{"en":"No order is lost","fr":"Aucune commande n'est perdue"},{"en":"Emails arrive late, not twice","fr":"Les e-mails arrivent en retard, pas en double"}],"flows":[["orders","bus","evt",{"en":"backlog, in order","fr":"retard, dans l'ordre"}],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}]]}]},{"id":"notifydown","name":{"en":"Notifications are down","fr":"Les notifications sont en panne"},"summary":{"en":"Only emails wait.","fr":"Seuls les e-mails attendent."},"steps":[{"nav":{"en":"Down","fr":"Panne"},"title":{"en":"Events wait in the notifications queue","fr":"Les événements attendent dans la file des notifications"},"body":[{"en":"<code>orders<\/code> and <code>inventory<\/code> keep working. The events for <code>notifications<\/code> wait in its durable queue.","fr":"<code>commandes<\/code> et <code>stock<\/code> continuent. Les événements destinés à <code>notifications<\/code> attendent dans sa file durable."}],"down":["notify"],"flows":[["orders","bus","evt","OrderPlaced"],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt",{"en":"waits in queue","fr":"attend dans la file"},{"park":true}]]}]},{"id":"pspdown","name":{"en":"The payment provider is down","fr":"Le prestataire de paiement est en panne"},"summary":{"en":"The shopper is told to retry; nothing is charged twice.","fr":"Le client est invité à réessayer ; rien n'est débité deux fois."},"steps":[{"nav":{"en":"Refused","fr":"Refus"},"title":{"en":"No payment, no order event","fr":"Pas de paiement, pas d'événement de commande"},"body":[{"en":"<code>payments<\/code> cannot reach the provider and says so. <code>orders<\/code> keeps the order as <b>pending<\/b> and publishes nothing, so no stock is reserved and no email goes out.","fr":"<code>paiements<\/code> ne joint pas le prestataire et le signale. <code>commandes<\/code> garde la commande <b>en attente<\/b> et ne publie rien : aucun stock réservé, aucun e-mail envoyé."}],"down":["psp"],"flows":[["gateway","orders","req",{"en":"place order","fr":"passer commande"}],["orders","payments","req",{"en":"charge","fr":"débiter"}],["payments","psp","req",{"en":"payment intent","fr":"intention de paiement"},{"block":true}],["payments","orders","err",{"en":"provider unreachable","fr":"prestataire injoignable"}],["orders","gateway","res",{"en":"pending · retry","fr":"en attente · réessayer"}]]}]}]},{"id":"why","name":{"en":"Why a service","fr":"Pourquoi un service"},"scen":[{"id":"whyassist","name":{"en":"assistant","fr":"assistant"},"summary":{"en":"Why the AI is its own service and only proposes.","fr":"Pourquoi l'IA est un service à part qui ne fait que proposer."},"steps":[{"nav":{"en":"Without","fr":"Sans"},"hypo":true,"title":{"en":"Not chosen: orders calls the model and waits","fr":"Non retenu : commandes appelle le modèle et attend"},"body":[{"en":"Every order would wait for the model. A slow or failing model would block checkout.","fr":"Chaque commande attendrait le modèle. Un modèle lent ou en panne bloquerait le paiement."}],"flows":[["orders","llm","ai",{"en":"classify order","fr":"classer la commande"}],["llm","orders","err",{"en":"timeout","fr":"délai dépassé"},{"block":true}]]},{"nav":{"en":"With","fr":"Avec"},"title":{"en":"The assistant proposes; a person decides","fr":"L'assistant propose ; une personne décide"},"body":[{"en":"<code>assistant<\/code> reads the event, calls the model and attaches a proposal next to the order. Nothing waits for it.","fr":"<code>assistant<\/code> lit l'événement, appelle le modèle et joint une proposition à la commande. Rien ne l'attend."}],"facts":[{"en":"Checkout never waits for AI","fr":"Le paiement n'attend jamais l'IA"},{"en":"Changing the model is configuration","fr":"Changer de modèle est une affaire de configuration"},{"en":"The AI scales and fails on its own","fr":"L'IA monte en charge et tombe seule"}],"flows":[["bus","assist","evt","OrderPlaced"],["assist","llm","ai",{"en":"classify","fr":"classer"}],["llm","assist","ai",{"en":"proposal + confidence","fr":"proposition + confiance"}],["assist","orders","res",{"en":"attach proposal","fr":"joindre la proposition"}]]}]},{"id":"whygateway","name":{"en":"gateway","fr":"passerelle"},"summary":{"en":"Why tokens never reach the browser.","fr":"Pourquoi les jetons n'arrivent jamais au navigateur."},"steps":[{"nav":{"en":"Without","fr":"Sans"},"hypo":true,"title":{"en":"Not chosen: the browser keeps the tokens","fr":"Non retenu : le navigateur garde les jetons"},"body":[{"en":"A token in the browser can be read by any script on the page. One injected script would be enough to call the services as the shopper.","fr":"Un jeton dans le navigateur peut être lu par n'importe quel script de la page. Un seul script injecté suffirait pour appeler les services au nom du client."}],"flows":[["idp","web","res",{"en":"tokens in the browser","fr":"jetons dans le navigateur"}],["web","gateway","req",{"en":"Bearer token from the page","fr":"jeton Bearer de la page"}],["gateway","orders","req",{"en":"passed through as-is","fr":"transmis tel quel"}]]},{"nav":{"en":"With","fr":"Avec"},"title":{"en":"One door, and the keys stay behind it","fr":"Une seule porte, et les clés restent derrière"},"body":[{"en":"The <code>gateway<\/code> is the only way in. It holds the tokens, checks the session on every call and adds identity before forwarding.","fr":"La <code>passerelle<\/code> est la seule entrée. Elle garde les jetons, vérifie la session à chaque appel et ajoute l'identité avant de transmettre."}],"facts":[{"en":"The browser only holds a cookie scripts cannot read","fr":"Le navigateur ne garde qu'un cookie illisible par les scripts"},{"en":"Services trust one caller","fr":"Les services ne font confiance qu'à un appelant"}],"flows":[["web","gateway","req",{"en":"cookie","fr":"cookie"}],["gateway","cache","req","session"],["gateway","orders","req",{"en":"call + identity","fr":"appel + identité"}],["orders","gateway","res",{"en":"answer","fr":"réponse"}]]}]}]}]};
+const META = TOUR.meta || {};
+Object.assign(ICON, TOUR.icons || {});
+const N = TOUR.nodes;
+const byId = Object.fromEntries(N.map(n => [n.id, n]));
+const CATS = TOUR.categories;
+const HOME = TOUR.home || {};
+
+// ---------------- languages: any text may be "plain" or {"en": "...", "fr": "..."}
+const LANGS = Array.isArray(META.langs) && META.langs.length ? META.langs : [META.lang || 'en'];
+let lang = LANGS[0];
+try { const s = localStorage.getItem('system-tour-lang'); if (LANGS.includes(s)) lang = s; } catch (e) {}
+const L = x => (x && typeof x === 'object' && !Array.isArray(x)) ? (x[lang] ?? x[LANGS[0]] ?? Object.values(x)[0]) : x;
+const UI_TEXT = {
+  en: {req:'request', res:'response', evt:'event', ai:'AI call', err:'refused / blocked', tc:'to confirm',
+       hypo:'HYPOTHETICAL · OPTION NOT CHOSEN', keys:'← → step · , . move · space pause · r replay · 1-3 speed',
+       next:'Next', again:'Start again ↺', stepOf:'Step {a} of {b}', step:'step', moves:'WHAT MOVES', showMove:'Show this move',
+       toConfirm:'TO CONFIRM', down:'DOWN', home:'Home', homeTitle:'The system at work', start:'Start the tour',
+       nowRunning:'Now running', areas:'areas', pickArea:'Pick an area to step through it.',
+       replay:'Replay (r)', prevMove:'Previous move ( , )', pause:'Pause (space)', nextMove:'Next move ( . )', speed:'Speed', groups:'Scenario groups', language:'Language'},
+  fr: {req:'requête', res:'réponse', evt:'événement', ai:'appel IA', err:'refusé / bloqué', tc:'à confirmer',
+       hypo:'HYPOTHÈSE · OPTION NON RETENUE', keys:'← → étape · , . mouvement · espace pause · r rejouer · 1-3 vitesse',
+       next:'Suivant', again:'Recommencer ↺', stepOf:'Étape {a} sur {b}', step:'étape', moves:'CE QUI CIRCULE', showMove:'Voir ce mouvement',
+       toConfirm:'À CONFIRMER', down:'EN PANNE', home:'Accueil', homeTitle:'Le système en action', start:'Commencer la visite',
+       nowRunning:'En cours', areas:'domaines', pickArea:'Choisissez un domaine pour le parcourir étape par étape.',
+       replay:'Rejouer (r)', prevMove:'Mouvement précédent ( , )', pause:'Pause (espace)', nextMove:'Mouvement suivant ( . )', speed:'Vitesse', groups:'Groupes de scénarios', language:'Langue'},
+};
+const U = (k, vars) => {
+  let s = ((META.ui || {})[lang] || {})[k] ?? (UI_TEXT[lang] || {})[k] ?? UI_TEXT.en[k];
+  for (const v in vars || {}) s = s.replace('{' + v + '}', vars[v]);
+  return s;
+};
+const nameOf = id => L(byId[id].name || byId[id].label);
+
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.title = L(META.title) || 'System Tour';
+  document.getElementById('crumb').textContent = L(META.crumb) || '';
+  document.getElementById('heading').textContent = L(META.heading) || L(META.title) || 'How the system behaves';
+  document.getElementById('svg').setAttribute('aria-label', L(META.mapLabel) || 'Animated isometric map of the system');
+  document.querySelectorAll('[data-ui]').forEach(e => { e.textContent = U(e.dataset.ui); });
+  const tips = {replay:'replay', mprev:'prevMove', pause:'pause', mnext:'nextMove'};
+  for (const id in tips) document.getElementById(id).title = U(tips[id]);
+  document.getElementById('speed').setAttribute('aria-label', U('speed'));
+  document.getElementById('cats').setAttribute('aria-label', U('groups'));
+  const box = document.getElementById('langs');
+  box.setAttribute('aria-label', U('language'));
+  box.innerHTML = '';
+  if (LANGS.length > 1) for (const l of LANGS) {
+    const b = document.createElement('button');
+    b.textContent = l; b.className = l === lang ? 'on' : ''; b.setAttribute('aria-pressed', l === lang);
+    b.onclick = () => setLang(l);
+    box.appendChild(b);
+  }
+}
+
+// ---------------- geometry helpers
+const P = (u, v) => [(u - v) * S, (u + v) * S / 2];
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const pts = a => a.map(p => p.join(',')).join(' ');
+const svg = document.getElementById('svg');
+const defs = el('defs', {}, svg);
+defs.innerHTML = `
+  <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <linearGradient id="cylTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6b5590"/><stop offset="1" stop-color="#4e3d6b"/></linearGradient>
+  <linearGradient id="cylSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3b2e52"/><stop offset=".35" stop-color="#5a4880"/><stop offset="1" stop-color="#33284a"/></linearGradient>`;
+const gGrid = el('g', {}, svg), gZone = el('g', {}, svg), gWire = el('g', {}, svg),
+      gPkt = el('g', {}, svg), gNode = el('g', {}, svg), gLbl = el('g', {}, svg), gOver = el('g', {}, svg), gTag = el('g', {}, svg), gFx = el('g', {}, svg);
+
+{ // grid: the nodes' extent plus a margin
+  const us = N.map(n => n.u), vs = N.map(n => n.v);
+  const u0 = Math.floor(Math.min(...us)) - 5, u1 = Math.ceil(Math.max(...us)) + 5;
+  const v0 = Math.floor(Math.min(...vs)) - 5, v1 = Math.ceil(Math.max(...vs)) + 5;
+  for (let u = u0; u <= u1; u++) el('polyline', {points: pts([P(u,v0),P(u,v1)]), stroke:'#211e1a','stroke-width':1, fill:'none'}, gGrid);
+  for (let v = v0; v <= v1; v++) el('polyline', {points: pts([P(u0,v),P(u1,v)]), stroke:'#211e1a','stroke-width':1, fill:'none'}, gGrid);
+}
+
+// zone: the dashed boundary around what you run (optional)
+let zone = null, zoneTxt = null;
+if (TOUR.zone) {
+  const [[za, zb], [zc, zd]] = [TOUR.zone.from, TOUR.zone.to];
+  zone = el('polygon', {class:'zone', points: pts([[za,zb],[zc,zb],[zc,zd],[za,zd]].map(p=>P(...p)))}, gZone);
+  const [x,y] = P(za + 0.9, zd + 0.2);
+  zoneTxt = el('text', {class:'zone-txt', x, y, transform:`rotate(26.565 ${x} ${y})`}, gZone);
+}
+
+// ---------------- routes ('a|b' sorted ids -> 'uv' or 'vu': which grid axis the wire walks first)
+const routeMode = TOUR.routes || {};
+const base = id => id.split('#')[0];
+const rep = id => +(id.split('#')[1] || 0);
+const REP_OFF = k => [-11 * k, -11 * k];
+function R(a, b) {
+  const A = byId[base(a)], B = byId[base(b)];
+  const sorted = [base(a), base(b)].sort();
+  const vFirst = routeMode[sorted.join('|')] === 'vu';
+  let mid;
+  if (sorted[0] === base(a)) mid = vFirst ? [A.u, B.v] : [B.u, A.v];
+  else mid = vFirst ? [B.u, A.v] : [A.u, B.v];
+  const p = [P(A.u, A.v), P(...mid), P(B.u, B.v)];
+  const oa = REP_OFF(rep(a)), ob = REP_OFF(rep(b));
+  p[0] = [p[0][0] + oa[0], p[0][1] + oa[1]];
+  p[2] = [p[2][0] + ob[0], p[2][1] + ob[1]];
+  return p;
+}
+const pathD = arr => 'M' + arr.map(p => p.join(',')).join('L');
+const wireKey = (a, b) => [base(a), base(b)].sort().join('|');
+const wires = new Map();
+for (const c of CATS) for (const sc of c.scen) for (const st of sc.steps) for (const f of st.flows) {
+  const k = wireKey(f[0], f[1]);
+  if (wires.has(k)) continue;
+  const [a, b] = k.split('|');
+  const tc = byId[a].tc || byId[b].tc;
+  wires.set(k, el('path', {class:'wire' + (tc ? ' tc' : ''), d: pathD(R(a, b))}, gWire));
+}
+
+// ---------------- node drawing
+function cube(g, x, y, kind, a = 1.25, h = 26) {
+  const [top, left, right, edge] = PAL[kind];
+  const w = a * S, hh = a * S / 2, pw = w * 1.45, ph = hh * 1.45;
+  el('polygon', {points: pts([[x,y-ph],[x+pw,y],[x,y+ph],[x-pw,y]]), fill:edge, 'fill-opacity':.07, stroke:edge, 'stroke-opacity':.35}, g);
+  el('polygon', {points: pts([[x-w,y-h],[x,y-h+hh],[x,y+hh],[x-w,y]]), fill:left, stroke:edge, 'stroke-opacity':.5, 'stroke-linejoin':'round'}, g);
+  el('polygon', {points: pts([[x,y-h+hh],[x+w,y-h],[x+w,y],[x,y+hh]]), fill:right, stroke:edge, 'stroke-opacity':.5, 'stroke-linejoin':'round'}, g);
+  el('polygon', {points: pts([[x,y-h-hh],[x+w,y-h],[x,y-h+hh],[x-w,y-h]]), fill:top, stroke:edge, 'stroke-width':1.4, 'stroke-linejoin':'round'}, g);
+  return y - h;
+}
+function cylinder(g, x, y, tc) {
+  const rx = 24, ry = 11, h = 30;
+  const st = tc ? {'stroke-dasharray':'4 3', stroke:'#e58a6f'} : {stroke:'#8a74b3'};
+  el('ellipse', {cx:x, cy:y, rx:rx*1.6, ry:ry*1.6, fill:'#8a74b3', 'fill-opacity':.06, stroke:'#8a74b3','stroke-opacity':.25}, g);
+  el('path', {d:`M${x-rx},${y-h} L${x-rx},${y} A${rx},${ry} 0 0 0 ${x+rx},${y} L${x+rx},${y-h} Z`, fill:'url(#cylSide)', ...st}, g);
+  el('ellipse', {cx:x, cy:y-h, rx, ry, fill:'url(#cylTop)', ...st}, g);
+  el('path', {d:`M${x-rx},${y-h+10} A${rx},${ry} 0 0 0 ${x+rx},${y-h+10}`, fill:'none', stroke:'#fff', 'stroke-opacity':.12}, g);
+  el('path', {d:'M-5,-3h10M-5,0h10M-5,3h10', transform:`translate(${x},${y-h})`, stroke:'#e9e0f5','stroke-width':1.2,'stroke-opacity':.7}, g);
+}
+function people(g, x, y, small) {
+  const a = small ? 1.3 : 2.1, w = a*S, hh = a*S/2, t = 6;
+  el('polygon', {points: pts([[x-w,y-t],[x,y-t+hh],[x,y+hh],[x-w,y]]), fill:'#221f1b', stroke:'#4a443c'}, g);
+  el('polygon', {points: pts([[x,y-t+hh],[x+w,y-t],[x+w,y],[x,y+hh]]), fill:'#2a2621', stroke:'#4a443c'}, g);
+  el('polygon', {points: pts([[x,y-t-hh],[x+w,y-t],[x,y-t+hh],[x-w,y-t]]), fill:'#1d1a17', stroke:'#6d665c', 'stroke-dasharray': small ? '4 3' : null}, g);
+  const cols = ['#c9b5e6','#e2c08f','#a9cf9b','#9fb8d9','#e0a6a0'];
+  const n = small ? 2 : 3; let i = 0;
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    const du = (r - (n-1)/2) * 0.55 * (a/1.5), dv = (c - (n-1)/2) * 0.55 * (a/1.5);
+    const px = x + (du - dv) * S * 0.9, py = y - t + (du + dv) * S * 0.45;
+    el('rect', {x:px-4, y:py-12, width:8, height:12, rx:4, fill:cols[(i++) % cols.length], 'fill-opacity':.85}, g);
+    el('circle', {cx:px, cy:py-15, r:3.6, fill:'#efe8dc'}, g);
+  }
+}
+function extBox(g, x, y) {
+  const a = 0.95, w = a*S, hh = a*S/2, h = 18;
+  const st = {fill:'#1d1a17', stroke:'#e58a6f', 'stroke-opacity':.8, 'stroke-dasharray':'4 3'};
+  el('polygon', {points: pts([[x-w,y-h],[x,y-h+hh],[x,y+hh],[x-w,y]]), ...st}, g);
+  el('polygon', {points: pts([[x,y-h+hh],[x+w,y-h],[x+w,y],[x,y+hh]]), ...st, fill:'#221d19'}, g);
+  el('polygon', {points: pts([[x,y-h-hh],[x+w,y-h],[x,y-h+hh],[x-w,y-h]]), ...st, fill:'#2a221d'}, g);
+}
+function pill(g, x, y, text, sub, tc) {
+  const p = el('g', {class:'pill' + (tc ? ' tc' : '')}, g);
+  const t = el('text', {x: x + 10, y: y + 4}, p); t.textContent = text;
+  let wText = text.length * 6.4;
+  if (sub) { const s = el('tspan', {fill:'#9d9488', 'font-size':'9.5', dx:6}, t); s.textContent = sub; wText += sub.length * 5.8 + 6; }
+  if (tc) el('text', {class:'badge', x: x + 10, y: y + 18}, p).textContent = U('toConfirm');
+  p.insertBefore(el('rect', {x, y: y - 9, width: wText + 20, height: tc ? 33 : 18, rx: 9}), p.firstChild);
+  return p;
+}
+
+const nodeEls = {}, pillEls = {}, lblEls = {};
+const DRAW_ORDER = [...N].sort((a,b) => (a.u + a.v) - (b.u + b.v));
+for (const n of DRAW_ORDER) {
+  const [x, y] = P(n.u, n.v);
+  n.xy = [x, y];
+  const g = el('g', {class:'node'}, gNode);
+  nodeEls[n.id] = g;
+  if (n.kind === 'store') cylinder(g, x, y, n.tc);
+  else if (n.kind === 'people') people(g, x, y, n.small);
+  else if (n.kind === 'ext') extBox(g, x, y);
+  else {
+    n.top = cube(g, x, y, n.kind);
+    if (n.icon) el('path', {d: ICON[n.icon], transform:`translate(${x-8},${n.top-21}) scale(.68)`, fill:'none', stroke:'#f3eee6', 'stroke-width':1.8, 'stroke-linecap':'round', 'stroke-linejoin':'round', 'stroke-opacity':.85}, g);
+  }
+}
+// labels depend on the language, so they are drawn (and redrawn) apart from the shapes
+function drawLabels() {
+  gTag.innerHTML = ''; gLbl.innerHTML = '';
+  for (const k in pillEls) delete pillEls[k];
+  for (const k in lblEls) delete lblEls[k];
+  if (zoneTxt) zoneTxt.textContent = L(TOUR.zone.label) || '';
+  for (const n of DRAW_ORDER) {
+    const [x, y] = n.xy, label = L(n.label), sub = L(n.sub);
+    if (n.kind === 'store') pillEls[n.id] = pill(gTag, x + 30, y - 22, label, sub, n.tc);
+    else if (n.kind === 'people') pillEls[n.id] = pill(gTag, x - 40, y + (n.small ? 30 : 46), label, sub, false);
+    else if (n.kind === 'ext') pillEls[n.id] = pill(gTag, x + 30, y - 16, label, sub, n.tc);
+    else {
+      const lg = lblEls[n.id] = el('g', {class:'node-lbl'}, gLbl);
+      el('text', {class:'lbl', x, y: n.top + 10}, lg).textContent = label;
+      if (sub) el('text', {class:'sub', x, y: n.top + 22}, lg).textContent = sub;
+    }
+  }
+}
+let FULL_VIEW = '';
+function fitAll() { // fit the view to what is drawn
+  const bx = [gNode.getBBox(), gTag.getBBox(), gLbl.getBBox()].concat(zone ? [zone.getBBox()] : []);
+  const x0 = Math.min(...bx.map(b => b.x)) - 24, y0 = Math.min(...bx.map(b => b.y)) - 60;
+  const x1 = Math.max(...bx.map(b => b.x + b.width)) + 24, y1 = Math.max(...bx.map(b => b.y + b.height)) + 70;
+  FULL_VIEW = `${x0} ${y0} ${x1 - x0} ${y1 - y0}`;
+  svg.setAttribute('viewBox', FULL_VIEW);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+}
+applyStatic();
+drawLabels();
+fitAll();
+
+// narrow screens: zoom on what the step uses, so labels stay readable
+const narrow = window.matchMedia('(max-width: 980px)');
+function fitView(used) {
+  if (!narrow.matches) { svg.setAttribute('viewBox', FULL_VIEW); return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const id of used) for (const e of [nodeEls[id], pillEls[id], lblEls[id]]) {
+    if (!e) continue; const b = e.getBBox();
+    x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+  }
+  if (!isFinite(x0)) return;
+  const m = 40; svg.setAttribute('viewBox', `${x0 - m} ${y0 - m - 30} ${x1 - x0 + 2*m} ${y1 - y0 + 2*m + 30}`);
+}
+narrow.addEventListener?.('change', () => refresh());
+
+// ---------------- per-step decorations: replicas, down badges
+function decorate(st) {
+  gOver.innerHTML = '';
+  gNode.querySelectorAll('.ghost').forEach(g => g.remove());
+  for (const id in nodeEls) { nodeEls[id].classList.remove('down'); lblEls[id]?.classList.remove('down'); }
+  const scale = st.scale || {};
+  for (const id in scale) {
+    const n = byId[id], g = nodeEls[id];
+    for (let k = scale[id] - 1; k >= 1; k--) {
+      const c = g.cloneNode(true);
+      c.classList.add('ghost'); c.classList.remove('dim');
+      c.querySelectorAll('text, path[stroke-linecap]').forEach(t => t.remove());
+      const [dx, dy] = REP_OFF(k);
+      c.setAttribute('transform', `translate(${dx},${dy})`);
+      c.style.opacity = .75;
+      gNode.insertBefore(c, g);
+    }
+    const [x, y] = n.xy;
+    const b = el('g', {class:'badge-x'}, gOver);
+    el('rect', {x: x + 26, y: y - 64, width: 30, height: 17, rx: 8.5, fill:'#c9d98f'}, b);
+    el('text', {x: x + 33, y: y - 52}, b).textContent = '×' + scale[id];
+  }
+  for (const id of st.down || []) {
+    const n = byId[id], [x, y] = n.xy;
+    nodeEls[id].classList.add('down'); lblEls[id]?.classList.add('down');
+    const b = el('g', {class:'badge-down'}, gOver);
+    el('rect', {x: x - 26, y: y - 70, width: 52, height: 19, rx: 5, fill:'#c4402d', stroke:'#ff9b88'}, b);
+    const dt = U('down');
+    b.querySelector('rect').setAttribute('width', Math.max(52, dt.length * 7 + 18));
+    el('text', {x: x - 17, y: y - 57}, b).textContent = dt;
+    el('path', {d:`M${x-13},${y-34} l26,13 M${x+13},${y-34} l-26,13`, stroke:'#ff7b66', 'stroke-width':3, 'stroke-linecap':'round'}, b);
+  }
+}
+
+// ---------------- packets / timeline
+const COLORS = {req:'#e2a85c', res:'#8fc78a', evt:'#b392e6', ai:'#e6d16a', err:'#ef6a55'};
+const SPEEDS = [0.5, 1, 2];
+let speed = 1, paused = false, clock = 0, last = 0, total = 0, packets = [];
+let cat = 0, sc = 0, step = 0, curFlow = -1;
+let mode = 'tour', runs = [], liveSig = null;
+
+function ring(x, y, color) {
+  if (reduced) return;
+  const c = el('circle', {cx:x, cy:y, r:7, fill:'none', stroke:color, 'stroke-width':2}, gFx);
+  c.style.transformOrigin = `${x}px ${y}px`; c.style.transformBox = 'view-box';
+  c.animate([{transform:'scale(.8)', opacity:.9},{transform:'scale(2.6)', opacity:0}], {duration:700, easing:'ease-out'}).onfinish = () => c.remove();
+}
+
+function resetPackets() {
+  gPkt.innerHTML = ''; gFx.innerHTML = '';
+  packets = []; clock = 0; curFlow = -1;
+}
+// lays one step's moves on the timeline from t0 and returns when the last one lands
+function addFlows(flows, t0, run) {
+  let prevStart = t0, prevEnd = t0 + 400;
+  const parkCount = {};
+  flows.forEach(f => {
+    const [a, b, type, rawLabel, o = {}] = f;
+    const label = L(rawLabel);
+    const path = el('path', {d: pathD(R(a, b)), fill:'none', stroke:'none'}, gPkt);
+    const len = path.getTotalLength();
+    const dur = Math.max(1700, len * 4.2);
+    const start = o.with ? prevStart : prevEnd + 350;
+    const color = COLORS[type];
+    const dot = el('g', {opacity:0}, gPkt);
+    el('circle', {r:9, fill:color, 'fill-opacity':.22}, dot);
+    el('circle', {r:5, fill:color, filter:'url(#glow)'}, dot);
+    let tag = null;
+    if (label) {
+      tag = el('g', {class:'pkt-tag', opacity:0}, gFx);
+      const r = el('rect', {rx:7, height:22, stroke:color}, tag);
+      el('text', {fill:color, x:9, y:15}, tag).textContent = label;
+      tag._w = label.length * 7.3 + 18; r.setAttribute('width', tag._w);
+    }
+    let parkOff = null;
+    if (o.park) { const t = base(b); parkCount[t] = (parkCount[t] || 0); parkOff = [-34 - parkCount[t] * 13, 26]; parkCount[t]++; }
+    const p = {path, len, dur, start, end: start + dur, dot, tag, color, o, a, b, type, label, parkOff, fired:false, i: packets.length, run};
+    packets.push(p);
+    prevStart = start; prevEnd = Math.max(prevEnd, p.end);
+  });
+  return prevEnd;
+}
+function buildPackets(st) {
+  resetPackets();
+  total = addFlows(st.flows, 0, 0) + 2600;
+}
+
+function place(p, frac) {
+  const pt = p.path.getPointAtLength(frac * p.len);
+  return [pt.x, pt.y];
+}
+
+function render() {
+  let cur = -1;
+  for (const p of packets) {
+    if (reduced) {
+      const [x, y] = place(p, p.o.block ? 0.8 : 0.5);
+      p.dot.setAttribute('transform', `translate(${x},${y})`); p.dot.setAttribute('opacity', 1);
+      if (p.tag) { p.tag.setAttribute('transform', `translate(${x - p.tag._w/2},${y - 34})`); p.tag.setAttribute('opacity', 1); }
+      continue;
+    }
+    const t = (clock - p.start) / p.dur;
+    if (t < 0) { p.dot.setAttribute('opacity', 0); if (p.tag) p.tag.setAttribute('opacity', 0); continue; }
+    if (clock >= p.start) cur = Math.max(cur, p.i);
+    const stopAt = p.o.block ? 0.8 : 1;
+    if (t < 1) {
+      const e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+      const [x, y] = place(p, e * stopAt);
+      p.dot.setAttribute('transform', `translate(${x},${y})`);
+      p.dot.setAttribute('opacity', Math.min(1, t * 8));
+      if (p.tag) { p.tag.setAttribute('transform', `translate(${x - p.tag._w/2},${y - 36})`); p.tag.setAttribute('opacity', Math.min(1, t * 8)); }
+      continue;
+    }
+    // arrived
+    const [x, y] = place(p, stopAt);
+    if (!p.fired) { p.fired = true; ring(x, y, p.o.block ? COLORS.err : p.color); }
+    const after = clock - p.end;
+    if (p.o.block) {               // stays, blinking red, until the loop ends
+      p.dot.setAttribute('transform', `translate(${x},${y})`);
+      p.dot.setAttribute('opacity', 0.55 + 0.45 * Math.abs(Math.sin(after / 260)));
+      if (p.tag) { p.tag.setAttribute('transform', `translate(${x - p.tag._w/2},${y - 36})`); p.tag.setAttribute('opacity', mode === 'home' ? Math.max(0, 1 - Math.max(0, after - 1300) / 500) : 1); }
+    } else if (p.o.park) {         // waits beside the queue
+      const px = x + p.parkOff[0], py = y + p.parkOff[1];
+      p.dot.setAttribute('transform', `translate(${px},${py})`); p.dot.setAttribute('opacity', 1);
+      if (p.tag) { const f = Math.max(0, 1 - Math.max(0, after - 1800) / 600); p.tag.setAttribute('transform', `translate(${x - p.tag._w/2},${y - 36})`); p.tag.setAttribute('opacity', f); }
+    } else {                       // label lingers so it can be read
+      p.dot.setAttribute('opacity', 0);
+      if (p.tag) { const f = Math.max(0, 1 - Math.max(0, after - 1300) / 500); p.tag.setAttribute('transform', `translate(${x - p.tag._w/2},${y - 36})`); p.tag.setAttribute('opacity', f); }
+    }
+  }
+  if (reduced) cur = packets.length - 1;
+  if (cur !== curFlow) { curFlow = cur; showCurrent(); }
+  if (mode === 'home') homeLive();
+}
+
+function frame(now) {
+  const dt = last ? Math.min(100, now - last) : 0; last = now;
+  if (!paused && !reduced) {
+    clock += dt * speed;
+    if (clock > total) { clock = 0; packets.forEach(p => p.fired = false); gFx.querySelectorAll('circle').forEach(c => c.remove()); }
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ---------------- UI
+const $ = id => document.getElementById(id);
+const scenario = () => CATS[cat].scen[sc];
+const stepData = () => scenario().steps[step];
+const nm = id => nameOf(base(id)) + (id.includes('#') ? ` #${rep(id) + 1}` : '');
+const paras = x => (x == null ? [] : Array.isArray(x) ? x : [x]).map(L);
+
+function caption() {
+  if (mode === 'home') return;            // homeLive() writes the caption on the home view
+  const st = stepData();
+  const cap = $('caption');
+  if (curFlow < 0) { cap.innerHTML = `<span class="k">▶ ${L(st.title)}</span>`; return; }
+  const [a, b, type, label] = st.flows[curFlow];
+  cap.innerHTML = `<span class="k">${curFlow + 1}/${st.flows.length}</span>
+    <span class="route" style="color:${COLORS[type]}">${nm(a)} → ${nm(b)}</span>
+    <span class="what">${L(label) || ''}</span>`;
+}
+function showCurrent() {
+  if (mode === 'home') return;
+  caption();
+  document.querySelectorAll('#moves li').forEach((li, i) => {
+    const same = curFlow >= 0 && packets[i] && packets[curFlow] && packets[i].start === packets[curFlow].start;
+    li.classList.toggle('now', !!(i === curFlow || same));
+    li.classList.toggle('past', i < curFlow);
+  });
+}
+
+function renderCats() {
+  $('cats').innerHTML = '';
+  if (HOME_RUNS.length) {
+    const b = document.createElement('button');
+    b.className = 'cat home' + (mode === 'home' ? ' on' : '');
+    b.textContent = U('home');
+    b.onclick = goHome;
+    $('cats').appendChild(b);
+  }
+  CATS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'cat' + (mode === 'tour' && i === cat ? ' on' : '');
+    b.innerHTML = `${L(c.name)}<span class="n">${c.scen.length}</span>`;
+    b.onclick = () => go(i, 0, 0);
+    $('cats').appendChild(b);
+  });
+  $('scen').innerHTML = '';
+  if (mode === 'home') return;
+  CATS[cat].scen.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (i === sc ? ' on' : '');
+    b.textContent = L(s.name);
+    b.onclick = () => go(cat, i, 0);
+    $('scen').appendChild(b);
+  });
+}
+
+function stripTrack(box, n, done) {
+  box.innerHTML = '';
+  box.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  const edge = 50 / n;
+  if (n > 1) {
+    const tr = document.createElement('div'); tr.className = 'track'; tr.style.left = edge + '%'; tr.style.right = edge + '%'; box.appendChild(tr);
+    if (done != null) {
+      const bar = document.createElement('div'); bar.className = 'bar'; bar.style.left = edge + '%';
+      bar.style.width = ((100 - 2 * edge) * done / (n - 1)) + '%'; box.appendChild(bar);
+    }
+  }
+}
+function renderSteps() {
+  const s = scenario(), n = s.steps.length;
+  const box = $('steps');
+  stripTrack(box, n, step);
+  s.steps.forEach((st, j) => {
+    const b = document.createElement('button');
+    b.className = 'step' + (j === step ? ' on' : '') + (j < step ? ' done' : '');
+    b.innerHTML = `<span class="dot">${j + 1}</span><span>${L(st.nav)}</span>`;
+    b.onclick = () => go(cat, sc, j);
+    box.appendChild(b);
+  });
+  $('strip-title').textContent = L(s.name).toUpperCase();
+  $('count').textContent = U('stepOf', {a: step + 1, b: n});
+}
+
+function go(c, s, j) {
+  mode = 'tour';
+  cat = c; sc = s; step = j;
+  const st = stepData(), scn = scenario();
+  // nodes in view
+  const used = new Set();
+  st.flows.forEach(f => { used.add(base(f[0])); used.add(base(f[1])); });
+  (st.down || []).forEach(id => used.add(id));
+  (st.extra || []).forEach(id => used.add(id));
+  for (const id in nodeEls) { nodeEls[id].classList.remove('soft'); nodeEls[id].classList.toggle('dim', !used.has(id)); }
+  for (const id in pillEls) pillEls[id].style.opacity = used.has(id) ? 1 : .16;
+  for (const id in lblEls) { lblEls[id].classList.remove('soft'); lblEls[id].classList.toggle('dim', !used.has(id)); }
+  fitView(used);
+  const active = new Set(st.flows.map(f => wireKey(f[0], f[1])));
+  for (const [k, w] of wires) { w.classList.toggle('on', active.has(k)); w.classList.toggle('dim', !active.has(k)); }
+  decorate(st);
+  $('stamp').classList.toggle('on', !!st.hypo);
+
+  const sw = t => `<i class="sw" style="background:${COLORS[t]}"></i>`;
+  const callout = st.callout ? `<div class="callout ${st.callout[0]} slide-in d3"><b>${L(st.callout[1])}</b>${L(st.callout[2])}</div>` : '';
+  const facts = st.facts ? `<ul class="facts slide-in d3">${paras(st.facts).map(f => `<li>${f}</li>`).join('')}</ul>` : '';
+  const moves = `<div class="moves slide-in d3"><h3>${U('moves')}</h3><ol id="moves" style="margin:0;padding:0;list-style:none">${st.flows.map(f =>
+      `<li><div><span class="r">${sw(f[2])}${nm(f[0])} → ${nm(f[1])}</span>${L(f[3]) ? `<br>${L(f[3])}` : ''}</div></li>`).join('')}</ol></div>`;
+  $('guide').innerHTML = `
+    <div class="kicker slide-in">${L(CATS[cat].name)} · ${U('stepOf', {a: step + 1, b: scn.steps.length})}</div>
+    <div class="scen-title slide-in">${L(scn.name)}</div>
+    <h2 class="slide-in d1">${st.hypo ? '⚠ ' : ''}${L(st.title)}</h2>
+    <div class="slide-in d2">${paras(st.body).map(p => `<p>${p}</p>`).join('')}</div>
+    ${callout}${facts}${moves}`;
+  document.querySelectorAll('#moves li').forEach((li, i) => { li.onclick = () => seekFlow(i); li.title = U('showMove'); });
+  renderCats(); renderSteps();
+  $('back').disabled = !HOME_RUNS.length && cat === 0 && sc === 0 && step === 0;
+  $('mprev').disabled = $('mnext').disabled = false;
+  const nx = nextPos();
+  $('next').textContent = nx ? `${U('next')}: ${L(nx[3])} →` : U('again');
+  try { history.replaceState(null, '', `#${CATS[cat].id}/${scn.id}/${step + 1}`); } catch (e) {}
+  setPaused(false);
+  buildPackets(st);
+  showCurrent();
+}
+
+// ---------------- home: several areas of the system running at once
+const HOME_RUNS = (() => {
+  const out = [];
+  if (Array.isArray(HOME.play)) {
+    for (const ref of HOME.play) {
+      const [c, s, j] = String(ref).split('/');
+      const ci = CATS.findIndex(x => x.id === c); if (ci < 0) continue;
+      const si = CATS[ci].scen.findIndex(x => x.id === s); if (si < 0) continue;
+      const steps = CATS[ci].scen[si].steps;
+      if (j) { if (steps[+j - 1]) out.push([ci, si, +j - 1]); }
+      else steps.forEach((st, sj) => out.push([ci, si, sj]));
+    }
+  } else if (HOME.play !== false) {   // default: the normal-use steps of the first category
+    CATS[0].scen.forEach((s, si) => s.steps.forEach((st, sj) => {
+      if (!st.hypo && !(st.down || []).length && !st.scale) out.push([0, si, sj]);
+    }));
+  }
+  return out;
+})();
+const sameScen = (r, ci, si) => r[0] === ci && r[1] === si;
+
+function goHome() {
+  if (!HOME_RUNS.length) return go(0, 0, 0);
+  mode = 'home';
+  resetPackets(); runs = []; liveSig = null;
+  let t = 0, endMax = 0;
+  (reduced ? HOME_RUNS.slice(0, 1) : HOME_RUNS).forEach((ref, k) => {
+    const st = CATS[ref[0]].scen[ref[1]].steps[ref[2]];
+    const first = packets.length;
+    const end = addFlows(st.flows, t, k);
+    const nodes = new Set();
+    st.flows.forEach(f => { nodes.add(base(f[0])); nodes.add(base(f[1])); });
+    runs.push({ref, start: packets[first] ? packets[first].start : t, end, nodes, wires: new Set(st.flows.map(f => wireKey(f[0], f[1])))});
+    endMax = Math.max(endMax, end);
+    t += (end - t) * 0.5;               // the next area starts halfway through this one
+  });
+  total = endMax + 1500;
+
+  decorate({});
+  $('stamp').classList.remove('on');
+  for (const id in nodeEls) nodeEls[id].classList.remove('dim');
+  for (const id in pillEls) pillEls[id].style.opacity = 1;
+  for (const id in lblEls) lblEls[id].classList.remove('dim');
+  for (const [, w] of wires) w.classList.remove('on', 'dim');
+  fitView(new Set(Object.keys(nodeEls)));
+
+  $('guide').innerHTML = `
+    <div class="kicker slide-in">${U('home')}</div>
+    <h2 class="slide-in d1">${L(HOME.title) || U('homeTitle')}</h2>
+    <div class="slide-in d2">${paras(HOME.intro).map(p => `<p>${p}</p>`).join('')}<p>${U('pickArea')}</p></div>
+    <div class="now slide-in d2"><b>${U('nowRunning')}</b><div class="t" id="now-t"></div></div>
+    <div class="areas slide-in d3">${CATS.map((c, ci) => `<div><h3>${L(c.name)}</h3>${c.scen.map((s, si) =>
+      `<button class="area" data-c="${ci}" data-s="${si}"><span class="nm">${L(s.name)}</span>${s.summary ? `<span class="sm">${L(s.summary)}</span>` : ''}</button>`).join('')}</div>`).join('')}</div>`;
+  document.querySelectorAll('.area').forEach(a => { a.onclick = () => go(+a.dataset.c, +a.dataset.s, 0); });
+  renderCats(); renderHomeStrip();
+  $('caption').innerHTML = '';
+  $('back').disabled = true;
+  $('mprev').disabled = $('mnext').disabled = true;
+  $('next').textContent = `${U('start')} →`;
+  try { history.replaceState(null, '', '#home'); } catch (e) {}
+  setPaused(false);
+  homeLive();
+}
+function renderHomeStrip() {
+  const seen = [];
+  HOME_RUNS.forEach(r => { if (!seen.some(x => sameScen(r, x[0], x[1]))) seen.push([r[0], r[1]]); });
+  const box = $('steps');
+  stripTrack(box, seen.length, null);
+  seen.forEach(([ci, si], k) => {
+    const b = document.createElement('button');
+    b.className = 'step'; b.dataset.c = ci; b.dataset.s = si;
+    b.innerHTML = `<span class="dot">${k + 1}</span><span>${L(CATS[ci].scen[si].name)}</span>`;
+    b.onclick = () => go(ci, si, 0);
+    box.appendChild(b);
+  });
+  $('strip-title').textContent = (L(HOME.title) || U('homeTitle')).toUpperCase();
+  $('count').textContent = `${seen.length} ${U('areas')}`;
+}
+// light what the running areas use; called every frame, does work only when that set changes
+function homeLive() {
+  const live = runs.filter(r => clock >= r.start && clock <= r.end + 600);
+  const sig = live.map(r => r.ref.join('.')).join('|');
+  if (sig === liveSig) return;
+  liveSig = sig;
+  const nodes = new Set(), wk = new Set();
+  live.forEach(r => { r.nodes.forEach(n => nodes.add(n)); r.wires.forEach(w => wk.add(w)); });
+  const soft = id => live.length > 0 && !nodes.has(id);
+  for (const id in nodeEls) nodeEls[id].classList.toggle('soft', soft(id));
+  for (const id in pillEls) pillEls[id].style.opacity = soft(id) ? .42 : 1;
+  for (const id in lblEls) lblEls[id].classList.toggle('soft', soft(id));
+  for (const [k, w] of wires) w.classList.toggle('on', wk.has(k));
+  const isLive = (ci, si) => live.some(r => sameScen(r.ref, ci, si));
+  document.querySelectorAll('.area').forEach(a => a.classList.toggle('live', isLive(+a.dataset.c, +a.dataset.s)));
+  document.querySelectorAll('#steps .step').forEach(b => b.classList.toggle('on', isLive(+b.dataset.c, +b.dataset.s)));
+  const latest = live[live.length - 1];
+  if (!latest) return;
+  const [ci, si, sj] = latest.ref, s = CATS[ci].scen[si], st = s.steps[sj];
+  const t = $('now-t');
+  if (t) t.innerHTML = live.map(r => {
+    const rs = CATS[r.ref[0]].scen[r.ref[1]];
+    return `<div><span class="s">${L(rs.name)}</span> · ${L(rs.steps[r.ref[2]].title)}</div>`;
+  }).join('');
+  $('caption').innerHTML = `<span class="what"><span style="color:var(--accent)">●</span> ${L(s.name)} · ${L(st.title)}</span>`;
+}
+
+function refresh() { mode === 'home' ? goHome() : go(cat, sc, step); }
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem('system-tour-lang', l); } catch (e) {}
+  applyStatic(); drawLabels(); fitAll(); refresh();
+}
+
+function nextPos() {
+  const s = scenario();
+  if (step < s.steps.length - 1) return [cat, sc, step + 1, s.steps[step + 1].nav];
+  if (sc < CATS[cat].scen.length - 1) return [cat, sc + 1, 0, CATS[cat].scen[sc + 1].name];
+  if (cat < CATS.length - 1) return [cat + 1, 0, 0, CATS[cat + 1].scen[0].name];
+  return null;
+}
+function prevPos() {
+  if (step > 0) return [cat, sc, step - 1];
+  if (sc > 0) return [cat, sc - 1, CATS[cat].scen[sc - 1].steps.length - 1];
+  if (cat > 0) { const ps = CATS[cat - 1].scen; return [cat - 1, ps.length - 1, ps[ps.length - 1].steps.length - 1]; }
+  return null;
+}
+// jump to one move and hold it there, paused, with its label in view
+function seekFlow(i) {
+  if (mode === 'home' || reduced || !packets.length) return;
+  if (i >= packets.length) { $('next').click(); if (mode === 'tour') seekFlow(0); return; }
+  if (i < 0) {
+    const p = prevPos(); if (!p) return;
+    go(...p); seekFlow(packets.length - 1); return;
+  }
+  const p = packets[i];
+  clock = p.start + p.dur * 0.7;
+  packets.forEach(q => q.fired = q.end <= clock);
+  gFx.querySelectorAll('circle').forEach(c => c.remove());
+  setPaused(true);
+  render();
+}
+function moveNext() {
+  if (mode === 'home') return;
+  if (curFlow < 0) return seekFlow(0);
+  const s = packets[curFlow].start;
+  const j = packets.findIndex(q => q.start > s);
+  seekFlow(j < 0 ? packets.length : j);
+}
+function movePrev() {
+  if (mode === 'home') return;
+  if (curFlow <= 0) return seekFlow(-1);
+  const s = packets[curFlow].start;
+  let j = -1;
+  packets.forEach((q, k) => { if (q.start < s) j = k; });
+  if (j < 0) return seekFlow(-1);
+  seekFlow(packets.findIndex(q => q.start === packets[j].start));
+}
+
+function setPaused(p) { paused = p; $('pause').textContent = paused ? '▶' : '❚❚'; }
+function setSpeed(v) {
+  speed = v;
+  [...$('speed').children].forEach(b => b.classList.toggle('on', +b.dataset.v === v));
+}
+SPEEDS.forEach(v => {
+  const b = document.createElement('button'); b.dataset.v = v; b.textContent = v + '×';
+  b.onclick = () => setSpeed(v); $('speed').appendChild(b);
+});
+setSpeed(1);
+
+$('back').onclick = () => { const p = prevPos(); if (p) go(...p); else if (HOME_RUNS.length) goHome(); };
+$('next').onclick = () => {
+  if (mode === 'home') return go(0, 0, 0);
+  const n = nextPos();
+  if (n) go(n[0], n[1], n[2]); else if (HOME_RUNS.length) goHome(); else go(0, 0, 0);
+};
+$('replay').onclick = () => { if (mode === 'home') return goHome(); setPaused(false); buildPackets(stepData()); };
+$('pause').onclick = () => setPaused(!paused);
+$('mnext').onclick = moveNext;
+$('mprev').onclick = movePrev;
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') $('next').click();
+  else if (e.key === 'ArrowLeft') $('back').click();
+  else if (e.key === ' ') { e.preventDefault(); setPaused(!paused); }
+  else if (e.key === 'r') $('replay').click();
+  else if (e.key === '.') moveNext();
+  else if (e.key === ',') movePrev();
+  else if (['1','2','3'].includes(e.key)) setSpeed(SPEEDS[+e.key - 1]);
+});
+
+// start from the address (#cat/scenario/step) when present, else on the home view
+const h = (location.hash || '').slice(1).split('/');
+const ci = CATS.findIndex(c => c.id === h[0]);
+if (ci >= 0) {
+  const si = Math.max(0, CATS[ci].scen.findIndex(s => s.id === h[1]));
+  const sj = Math.min(CATS[ci].scen[si].steps.length - 1, Math.max(0, (+h[2] || 1) - 1));
+  go(ci, si, sj);
+} else goHome();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
