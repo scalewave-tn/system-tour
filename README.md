@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://skills.sh/scalewave-tn/system-tour"><img src="https://skills.sh/b/scalewave-tn/system-tour" alt="Installs on skills.sh"></a>
+</p>
+
+<p align="center">
   <a href="https://scalewave-tn.github.io/system-tour/"><b>▶ Try the live demo</b></a>
   &nbsp;·&nbsp;
   <a href="#install">Install</a>
@@ -24,7 +28,7 @@ The output is a single self-contained HTML file with no external dependencies, s
 
 ## Install
 
-**With the skills CLI** (Node.js 22.20+):
+**With the skills CLI** (Node.js 22.20+), also listed on [skills.sh](https://skills.sh/scalewave-tn/system-tour/system-tour):
 
 ```bash
 npx skills add scalewave-tn/system-tour
