@@ -1,0 +1,10 @@
+{
+  "name": "system-tour",
+  "version": "1.0.0",
+  "description": "Build an animated, step-by-step architecture tour page: one isometric map, scenarios for normal use, scaling, failures and design choices, a home view and EN/FR support.",
+  "author": {"name": "Scalewave", "url": "https://scalewave.tn"},
+  "homepage": "https://github.com/scalewave-tn/system-tour",
+  "repository": "https://github.com/scalewave-tn/system-tour",
+  "license": "MIT",
+  "keywords": ["architecture", "hld", "diagram", "documentation", "skill"]
+}

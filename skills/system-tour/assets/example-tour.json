@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "title": "Acme Orders Tour",
+    "crumb": "Acme Orders (synthetic example) · architecture tour",
+    "heading": "How Acme Orders behaves",
+    "lang": "en",
+    "mapLabel": "Animated isometric map of Acme Orders"
+  },
+  "zone": {"from": [0.3, -6.5], "to": [18.4, 9.5], "label": "Acme · private cloud"},
+  "routes": {"gateway|web": "uv", "gateway|orders": "vu", "bus|orders": "vu", "bus|notify": "vu", "bus|inventory": "vu"},
+  "nodes": [
+    {"id": "shopper",  "kind": "people",   "u": -1, "v": 9,    "label": "Shoppers", "sub": "web"},
+    {"id": "web",      "kind": "entry",    "u": 2,  "v": 6,    "label": "Web", "sub": "SPA · CDN", "icon": "globe"},
+    {"id": "gateway",  "kind": "entry",    "u": 5,  "v": 3,    "label": "Gateway", "sub": "single entry", "icon": "door"},
+    {"id": "idp",      "kind": "identity", "u": 2,  "v": 0.5,  "label": "Identity", "sub": "OIDC", "icon": "key"},
+    {"id": "orders",   "kind": "service",  "u": 9,  "v": 0,    "label": "orders", "icon": "cart"},
+    {"id": "payments", "kind": "service",  "u": 9,  "v": -3,   "label": "payments", "icon": "card"},
+    {"id": "inventory","kind": "service",  "u": 12, "v": 0,    "label": "inventory", "icon": "box"},
+    {"id": "notify",   "kind": "service",  "u": 12, "v": -3,   "label": "notifications", "icon": "bell"},
+    {"id": "assist",   "kind": "ai",       "u": 9,  "v": 3,    "label": "assistant", "sub": "proposes only", "icon": "spark"},
+    {"id": "db",       "kind": "store",    "u": 16, "v": -1,   "label": "PostgreSQL", "sub": "schema per service"},
+    {"id": "bus",      "kind": "store",    "u": 16, "v": 2.5,  "label": "Message bus", "sub": "durable queues"},
+    {"id": "cache",    "kind": "store",    "u": 16, "v": 6,    "label": "Redis", "sub": "shared state"},
+    {"id": "psp",      "kind": "ext",      "u": 8,  "v": -9,   "label": "Payment provider", "tc": true},
+    {"id": "email",    "kind": "ext",      "u": 13, "v": -9,   "label": "Email service", "tc": true},
+    {"id": "llm",      "kind": "ext",      "u": 20, "v": 7,    "label": "Hosted model", "tc": true}
+  ],
+  "categories": [
+    {"id": "use", "name": "Using the app", "scen": [
+      {"id": "order", "name": "Place an order", "summary": "From the basket to a paid order and a confirmation email.", "steps": [
+        {"nav": "Sign in", "title": "The gateway holds the session, not the browser",
+         "body": ["The shopper signs in on the identity provider. The <code>gateway</code> swaps the one-time code for tokens and keeps them; the browser only gets an HttpOnly cookie."],
+         "flows": [["shopper","web","req","sign in"],["web","gateway","req","/auth/login"],["gateway","idp","req","code + PKCE"],["idp","gateway","res","tokens stay here"],["gateway","cache","req","session"],["gateway","web","res","HttpOnly cookie"]]},
+        {"nav": "Order", "title": "Save the order and its event together",
+         "body": ["<code>orders</code> saves the order <b>and</b> its <code>OrderPlaced</code> event in one transaction (outbox), then asks <code>payments</code> to charge."],
+         "flows": [["shopper","web","req","pay"],["web","gateway","req","POST /orders"],["gateway","orders","req","place order"],["orders","db","req","order + outbox row"],["orders","payments","req","charge"],["payments","psp","req","payment intent"],["psp","payments","res","authorised"],["payments","orders","res","paid ✓"],["orders","bus","evt","OrderPlaced"]]},
+        {"nav": "Confirm", "title": "Everyone else learns from the event",
+         "body": ["<code>inventory</code> reserves the items and <code>notifications</code> sends the confirmation. Neither is called by <code>orders</code>; both read the same event."],
+         "callout": ["tc", "To confirm", "The payment provider and the email service are not chosen yet."],
+         "flows": [["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}],["inventory","db","req","reserve items"],["notify","email","req","confirmation email"]]}
+      ]}
+    ]},
+    {"id": "scale", "name": "Scaling", "scen": [
+      {"id": "instances", "name": "More shoppers, more instances", "summary": "Any instance can serve any request.", "steps": [
+        {"nav": "Spread", "title": "No user state in memory",
+         "body": ["Sessions live in Redis and data in PostgreSQL, so the next request can land on any instance."],
+         "scale": {"gateway": 2, "orders": 3},
+         "flows": [["web","gateway#0","req","shopper A"],["gateway#0","orders#0","req","order A"],["web","gateway#1","req","shopper B"],["gateway#1","orders#2","req","order B"],["gateway#1","cache","req","session: shared"]]},
+        {"nav": "One relay", "title": "Events leave once, in order",
+         "body": ["Three <code>orders</code> instances write outbox rows, but only the one holding the lock publishes them."],
+         "scale": {"orders": 3},
+         "flows": [["orders#0","db","req","take relay lock ✓"],["orders#1","db","err","lock taken",{"block":true}],["orders#0","bus","evt","OrderPlaced · in order"]]}
+      ]}
+    ]},
+    {"id": "fail", "name": "When something fails", "scen": [
+      {"id": "busdown", "name": "The bus is down", "summary": "Orders still save; events leave when the bus is back.", "steps": [
+        {"nav": "Down", "title": "Writes succeed; events wait in the outbox",
+         "body": ["The order and its outbox row are saved. The relay cannot publish, so the event stays in the database."],
+         "down": ["bus"],
+         "flows": [["gateway","orders","req","place order"],["orders","db","req","order + outbox row"],["orders","gateway","res","order saved ✓"],["orders","bus","err","publish fails",{"block":true}]]},
+        {"nav": "Back", "title": "The bus returns and the backlog drains",
+         "body": ["The relay publishes what waited. Each consumer ignores a message it has already handled."],
+         "facts": ["No order is lost","Emails arrive late, not twice"],
+         "flows": [["orders","bus","evt","backlog, in order"],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","OrderPlaced",{"with":true}]]}
+      ]},
+      {"id": "notifydown", "name": "Notifications are down", "summary": "Only emails wait.", "steps": [
+        {"nav": "Down", "title": "Events wait in the notifications queue",
+         "body": ["<code>orders</code> and <code>inventory</code> keep working. The events for <code>notifications</code> wait in its durable queue."],
+         "down": ["notify"],
+         "flows": [["orders","bus","evt","OrderPlaced"],["bus","inventory","evt","OrderPlaced"],["bus","notify","evt","waits in queue",{"park":true}]]}
+      ]}
+    ]},
+    {"id": "why", "name": "Why a service", "scen": [
+      {"id": "whyassist", "name": "assistant", "summary": "Why the AI is its own service and only proposes.", "steps": [
+        {"nav": "Without", "hypo": true, "title": "Not chosen: orders calls the model and waits",
+         "body": ["Every order would wait for the model. A slow or failing model would block checkout."],
+         "flows": [["orders","llm","ai","classify order"],["llm","orders","err","timeout",{"block":true}]]},
+        {"nav": "With", "title": "The assistant proposes; a person decides",
+         "body": ["<code>assistant</code> reads the event, calls the model and attaches a proposal next to the order. Nothing waits for it."],
+         "facts": ["Checkout never waits for AI","Changing the model is configuration","The AI scales and fails on its own"],
+         "flows": [["bus","assist","evt","OrderPlaced"],["assist","llm","ai","classify"],["llm","assist","ai","proposal + confidence"],["assist","orders","res","attach proposal"]]}
+      ]}
+    ]}
+  ]
+}

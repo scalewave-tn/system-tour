@@ -1,0 +1,11 @@
+{
+  "name": "scalewave",
+  "owner": {"name": "Scalewave", "url": "https://scalewave.tn"},
+  "plugins": [
+    {
+      "name": "system-tour",
+      "source": "./",
+      "description": "Build an animated, step-by-step architecture tour page from a project's high-level design."
+    }
+  ]
+}
